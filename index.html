@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quniverze — Founder Command Center</title>
+  <meta name="description" content="Calm, editorial, operational founder command center for Quniverze.">
+
+  <!-- Preconnect & Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell" id="app-shell">
+    
+    <!-- DESKTOP LEFT SIDEBAR -->
+    <aside class="sidebar" id="app-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-top">
+        <div class="brand-block">
+          <div class="brand-title">QUNIVERZE</div>
+          <div class="brand-subtitle">Founder Console</div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main Navigation">
+          <button type="button" class="nav-link is-active" data-view="today" id="nav-today">
+            <span class="nav-link-label">Today</span>
+            <span class="nav-count" id="today-badge-count">4</span>
+          </button>
+          <button type="button" class="nav-link" data-view="ventures" id="nav-ventures">
+            <span class="nav-link-label">Ventures</span>
+            <span class="nav-count-subtle" id="ventures-badge-count">2</span>
+          </button>
+          <button type="button" class="nav-link" data-view="contacts" id="nav-contacts">
+            <span class="nav-link-label">Contacts</span>
+            <span class="nav-count-subtle" id="contacts-badge-count">3</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="sidebar-bottom">
+        <button type="button" class="sidebar-quick-capture" id="sidebar-quick-capture-btn" aria-label="Quick capture (Command or Control plus K)">
+          <span class="capture-btn-label">+ Capture</span>
+          <kbd class="kbd-pill">⌘K</kbd>
+        </button>
+
+        <div class="sidebar-operational-status" id="sidebar-status-panel">
+          <div class="status-summary-label">CONSOLE STATUS</div>
+          <div class="status-summary-val" id="sidebar-summary-text">4 open · 1 needs call</div>
+        </div>
+
+        <button type="button" class="shortcuts-helper-trigger" id="shortcuts-trigger-btn" aria-label="Open keyboard shortcuts">
+          <span>Shortcuts</span>
+          <kbd class="kbd-pill">?</kbd>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN OPERATING STAGE -->
+    <main class="main-stage" id="main-stage">
+      
+      <!-- VIEW: TODAY (Master-Detail) -->
+      <section class="view-panel is-active" id="view-today" aria-label="Today Command Feed">
+        <div class="master-detail-layout">
+          
+          <!-- LEFT COLUMN: TODAY FEED -->
+          <div class="feed-column" id="feed-column" tabindex="-1">
+            <header class="feed-header">
+              <div class="feed-header-title-row">
+                <h1 class="page-title">Today</h1>
+                <span class="feed-date" id="current-date-label">Today</span>
+              </div>
+              <div class="feed-subhead-row">
+                <span class="feed-meta-status" id="feed-status-line">4 active items · 1 awaiting response</span>
+                <button type="button" class="feed-inline-capture-btn" id="feed-capture-trigger">+ New Item</button>
+              </div>
+            </header>
+
+            <!-- Continuous vertical feed list -->
+            <div class="feed-list" id="feed-list" role="list" aria-label="Action items feed">
+              <!-- Dynamically populated rows with section labels -->
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: SELECTED ITEM DETAIL (Desktop) -->
+          <aside class="detail-column" id="detail-column" aria-label="Selected item details">
+            <div class="detail-container" id="detail-pane-content">
+              <!-- Dynamically populated master-detail pane -->
+            </div>
+          </aside>
+
+        </div>
+      </section>
+
+      <!-- VIEW: VENTURES -->
+      <section class="view-panel" id="view-ventures" aria-label="Ventures Overview" hidden>
+        <div class="ventures-layout">
+          <header class="view-header">
+            <h1 class="page-title">Ventures</h1>
+            <p class="view-description">Operational portfolios, focus streams, and active experiments across your ventures.</p>
+          </header>
+
+          <div class="ventures-grid" id="ventures-container">
+            <!-- Dynamically populated ventures -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: CONTACTS -->
+      <section class="view-panel" id="view-contacts" aria-label="Founder Relationships and Contacts" hidden>
+        <div class="contacts-layout">
+          <header class="view-header">
+            <div class="view-header-row">
+              <div>
+                <h1 class="page-title">Contacts</h1>
+                <p class="view-description">Direct relationship pipeline, communications quiet age, and linked open actions.</p>
+              </div>
+              <button type="button" class="btn-editorial" id="add-contact-btn">+ Add Contact</button>
+            </div>
+          </header>
+
+          <div class="contacts-master-detail">
+            <div class="contacts-list" id="contacts-list" role="list">
+              <!-- Dynamically populated contacts list -->
+            </div>
+            <div class="contacts-detail-pane" id="contacts-detail-pane">
+              <!-- Selected contact detail -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="mobile-bottom-bar" id="mobile-bottom-bar" aria-label="Mobile Navigation">
+      <button type="button" class="mobile-nav-btn is-active" data-view="today" id="mob-nav-today">
+        <span class="mob-btn-title">Today</span>
+        <span class="mob-btn-dot" id="mob-today-dot"></span>
+      </button>
+      <button type="button" class="mobile-nav-btn" data-view="ventures" id="mob-nav-ventures">
+        <span class="mob-btn-title">Ventures</span>
+      </button>
+      <button type="button" class="mobile-nav-btn" data-view="contacts" id="mob-nav-contacts">
+        <span class="mob-btn-title">Contacts</span>
+      </button>
+    </nav>
+
+    <!-- MOBILE FLOATING ACTION BUTTON -->
+    <button type="button" class="mobile-fab" id="mobile-fab" aria-label="Quick capture item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- MOBILE FULL-SCREEN DETAIL VIEW -->
+    <section class="mobile-fullscreen-detail" id="mobile-fullscreen-detail" aria-label="Item details view" hidden>
+      <header class="mobile-detail-header">
+        <button type="button" class="mobile-back-btn" id="mobile-detail-back-btn" aria-label="Back to feed">
+          ← Feed
+        </button>
+        <span class="mobile-detail-title-preview" id="mobile-detail-header-preview">Details</span>
+        <div class="mobile-detail-quick-actions" id="mobile-detail-header-actions">
+          <!-- Star and Complete quick buttons -->
+        </div>
+      </header>
+      <div class="mobile-detail-scroll-body" id="mobile-detail-scroll-body">
+        <!-- Rendered detail contents on mobile -->
+      </div>
+    </section>
+
+    <!-- QUICK CAPTURE MODAL -->
+    <dialog class="quick-capture-dialog" id="quick-capture-dialog" aria-labelledby="capture-heading">
+      <div class="capture-inner">
+        <div class="capture-header">
+          <label for="quick-capture-input" class="capture-label" id="capture-heading">What needs to happen?</label>
+          <button type="button" class="modal-close-btn" id="quick-capture-close-btn" aria-label="Close modal">✕</button>
+        </div>
+        <div class="capture-input-wrap">
+          <input 
+            type="text" 
+            id="quick-capture-input" 
+            class="capture-input" 
+            placeholder="e.g., Review contract terms with logistics partner" 
+            autocomplete="off" 
+            spellcheck="false"
+          />
+        </div>
+        <div class="capture-footer">
+          <div class="capture-meta-defaults">
+            <span class="meta-tag">Type: Idea</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-tag">Venture: Unassigned</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-tag">Assignee: You</span>
+          </div>
+          <div class="capture-shortcuts-hint">
+            <kbd class="kbd-pill">↵ Enter</kbd> to create &nbsp; <kbd class="kbd-pill">Esc</kbd> to dismiss
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- KEYBOARD SHORTCUTS REFERENCE DIALOG -->
+    <dialog class="shortcuts-dialog" id="shortcuts-dialog" aria-labelledby="shortcuts-heading">
+      <div class="shortcuts-inner">
+        <div class="shortcuts-header">
+          <h2 class="shortcuts-title" id="shortcuts-heading">Command Center Shortcuts</h2>
+          <button type="button" class="modal-close-btn" id="shortcuts-close-btn" aria-label="Close dialog">✕</button>
+        </div>
+        <div class="shortcuts-body">
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">NAVIGATION &amp; FEED</div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Next / Previous feed item</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">J</kbd> / <kbd class="kbd-pill">K</kbd> or <kbd class="kbd-pill">↓</kbd> / <kbd class="kbd-pill">↑</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Open item details (mobile)</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">Enter</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Switch views (Today / Ventures / Contacts)</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">1</kbd> / <kbd class="kbd-pill">2</kbd> / <kbd class="kbd-pill">3</kbd></span>
+            </div>
+          </div>
+
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">ACTIONS ON SELECTED ITEM</div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Toggle complete / open</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">X</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Toggle important star</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">S</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Quick capture anywhere</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">⌘K</kbd> or <kbd class="kbd-pill">Ctrl+K</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-desc">Close detail / dismiss modal</span>
+              <span class="shortcut-keys"><kbd class="kbd-pill">Esc</kbd></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- NEW CONTACT MODAL -->
+    <dialog class="quick-capture-dialog" id="contact-dialog" aria-labelledby="contact-heading">
+      <form class="capture-inner" id="contact-form" method="dialog">
+        <div class="capture-header">
+          <span class="capture-label" id="contact-heading">Add Key Relationship</span>
+          <button type="button" class="modal-close-btn" id="contact-dialog-close" aria-label="Close modal">✕</button>
+        </div>
+        <div class="form-vertical-flow">
+          <div class="form-field">
+            <label for="contact-name-input" class="form-label">Name / Entity</label>
+            <input type="text" id="contact-name-input" class="form-input" placeholder="e.g. ABC Restaurant" required />
+          </div>
+          <div class="form-field">
+            <label for="contact-person-input" class="form-label">Primary Person &amp; Role</label>
+            <input type="text" id="contact-person-input" class="form-input" placeholder="e.g. David Chen, Managing Partner" />
+          </div>
+          <div class="form-field">
+            <label for="contact-venture-select" class="form-label">Venture</label>
+            <select id="contact-venture-select" class="form-select">
+              <option value="Quniverze">Quniverze</option>
+              <option value="Dropshipping">Dropshipping</option>
+              <option value="General">General Network</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="contact-notes-input" class="form-label">Context / Relationship Note</label>
+            <textarea id="contact-notes-input" class="form-textarea" rows="2" placeholder="Key context, partnership potential, or past notes..."></textarea>
+          </div>
+        </div>
+        <div class="capture-footer">
+          <button type="submit" class="btn-editorial-solid">Save Contact</button>
+          <button type="button" class="btn-editorial" id="contact-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- SUBTLE TOAST NOTIFICATION -->
+    <div class="toast" id="app-toast" role="status" aria-live="polite" hidden></div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
