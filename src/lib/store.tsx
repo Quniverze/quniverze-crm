@@ -182,15 +182,20 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
             setActivities(actsRes.data || []);
             setClients(clientsRes.data || []);
           } else {
-            // Fresh database tables: seed default demo records into Supabase
+            // Fresh database tables: seed default demo records into Supabase in relational order
+            await supabase.from('users').upsert(SEED_USERS);
+            await supabase.from('leads').upsert(SEED_LEADS);
             await Promise.allSettled([
-              supabase.from('users').upsert(SEED_USERS),
-              supabase.from('leads').upsert(SEED_LEADS),
               supabase.from('opportunities').upsert(SEED_OPPORTUNITIES),
               supabase.from('follow_ups').upsert(SEED_FOLLOW_UPS),
               supabase.from('activities').upsert(SEED_ACTIVITIES),
               supabase.from('clients').upsert(SEED_CLIENTS)
             ]);
+            setLeads(SEED_LEADS);
+            setOpportunities(SEED_OPPORTUNITIES);
+            setFollowUps(SEED_FOLLOW_UPS);
+            setActivities(SEED_ACTIVITIES);
+            setClients(SEED_CLIENTS);
           }
         } catch (err) {
           console.warn('Supabase sync skipped, continuing with local store:', err);
