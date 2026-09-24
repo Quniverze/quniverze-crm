@@ -121,13 +121,30 @@ ALTER TABLE public.follow_ups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated and internal role access
-CREATE POLICY "Allow internal read access" ON public.users FOR SELECT USING (true);
-CREATE POLICY "Allow internal read access" ON public.leads FOR ALL USING (true);
-CREATE POLICY "Allow internal read access" ON public.opportunities FOR ALL USING (true);
-CREATE POLICY "Allow internal read access" ON public.follow_ups FOR ALL USING (true);
-CREATE POLICY "Allow internal read access" ON public.activities FOR ALL USING (true);
-CREATE POLICY "Allow internal read access" ON public.clients FOR ALL USING (true);
+-- Allow internal and anon access for Quniverze CRM operational suite
+DROP POLICY IF EXISTS "Allow internal read access" ON public.users;
+DROP POLICY IF EXISTS "Allow internal read access" ON public.leads;
+DROP POLICY IF EXISTS "Allow internal read access" ON public.opportunities;
+DROP POLICY IF EXISTS "Allow internal read access" ON public.follow_ups;
+DROP POLICY IF EXISTS "Allow internal read access" ON public.activities;
+DROP POLICY IF EXISTS "Allow internal read access" ON public.clients;
+
+CREATE POLICY "Allow internal full access" ON public.users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow internal full access" ON public.leads FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow internal full access" ON public.opportunities FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow internal full access" ON public.follow_ups FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow internal full access" ON public.activities FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow internal full access" ON public.clients FOR ALL USING (true) WITH CHECK (true);
+
+-- ENABLE REALTIME REPLICATION FOR LIVE SYNC
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.leads, public.opportunities, public.follow_ups, public.activities, public.clients;
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- SEED PEOPLE
 INSERT INTO public.users (id, name, role, email, phone)

@@ -21,6 +21,7 @@ import {
   SEED_ACTIVITIES,
   SEED_CLIENTS
 } from './seed-data';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 interface CRMContextType {
   // Current user & role
@@ -155,6 +156,93 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       setActivities(SEED_ACTIVITIES);
       setClients(SEED_CLIENTS);
     }
+
+    // Live cloud synchronization via Supabase (if configured)
+    if (isSupabaseConfigured && supabase) {
+      const syncWithSupabase = async () => {
+        try {
+          const [leadsRes, oppsRes, fuRes, actsRes, clientsRes] = await Promise.all([
+            supabase.from('leads').select('*').order('created_at', { ascending: false }),
+            supabase.from('opportunities').select('*').order('created_at', { ascending: false }),
+            supabase.from('follow_ups').select('*').order('due_at', { ascending: true }),
+            supabase.from('activities').select('*').order('created_at', { ascending: false }),
+            supabase.from('clients').select('*').order('created_at', { ascending: false })
+          ]);
+
+          if (leadsRes.error) {
+            // Tables may not be created yet in Supabase
+            console.warn('Supabase not ready or table missing:', leadsRes.error.message);
+            return;
+          }
+
+          if (leadsRes.data && leadsRes.data.length > 0) {
+            setLeads(leadsRes.data);
+            setOpportunities(oppsRes.data || []);
+            setFollowUps(fuRes.data || []);
+            setActivities(actsRes.data || []);
+            setClients(clientsRes.data || []);
+          } else {
+            // Fresh database tables: seed default demo records into Supabase
+            await Promise.allSettled([
+              supabase.from('users').upsert(SEED_USERS),
+              supabase.from('leads').upsert(SEED_LEADS),
+              supabase.from('opportunities').upsert(SEED_OPPORTUNITIES),
+              supabase.from('follow_ups').upsert(SEED_FOLLOW_UPS),
+              supabase.from('activities').upsert(SEED_ACTIVITIES),
+              supabase.from('clients').upsert(SEED_CLIENTS)
+            ]);
+          }
+        } catch (err) {
+          console.warn('Supabase sync skipped, continuing with local store:', err);
+        }
+      };
+
+      syncWithSupabase();
+
+      // Realtime listener across devices
+      const channel = supabase
+        .channel('crm-realtime-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setLeads((prev) => prev.some(l => l.id === payload.new.id) ? prev : [payload.new as Lead, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setLeads((prev) => prev.map(l => l.id === payload.new.id ? payload.new as Lead : l));
+          } else if (payload.eventType === 'DELETE') {
+            setLeads((prev) => prev.filter(l => l.id !== payload.old.id));
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'opportunities' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setOpportunities((prev) => prev.some(o => o.id === payload.new.id) ? prev : [payload.new as Opportunity, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setOpportunities((prev) => prev.map(o => o.id === payload.new.id ? payload.new as Opportunity : o));
+          } else if (payload.eventType === 'DELETE') {
+            setOpportunities((prev) => prev.filter(o => o.id !== payload.old.id));
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setActivities((prev) => prev.some(a => a.id === payload.new.id) ? prev : [payload.new as Activity, ...prev]);
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'follow_ups' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setFollowUps((prev) => prev.some(f => f.id === payload.new.id) ? prev : [payload.new as FollowUp, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setFollowUps((prev) => prev.map(f => f.id === payload.new.id ? payload.new as FollowUp : f));
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setClients((prev) => prev.some(c => c.id === payload.new.id) ? prev : [payload.new as Client, ...prev]);
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, []);
 
   // Sync to LocalStorage
@@ -217,6 +305,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     setLeads((prev) => [newLead, ...prev]);
 
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leads').insert(newLead).then(({ error }) => {
+        if (error) console.warn('Supabase lead insert warning:', error.message);
+      });
+    }
+
     // Append created activity
     addActivity({
       lead_id: newLead.id,
@@ -229,9 +323,16 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateLead = (id: string, updates: Partial<Lead>) => {
+    const updatedLead = { ...updates, updated_at: new Date().toISOString() };
     setLeads((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, ...updates, updated_at: new Date().toISOString() } : l))
+      prev.map((l) => (l.id === id ? { ...l, ...updatedLead } : l))
     );
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leads').update(updatedLead).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase lead update warning:', error.message);
+      });
+    }
   };
 
   const deleteLead = (id: string) => {
@@ -239,6 +340,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     setOpportunities((prev) => prev.filter((o) => o.lead_id !== id));
     setFollowUps((prev) => prev.filter((f) => f.lead_id !== id));
     setActivities((prev) => prev.filter((a) => a.lead_id !== id));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('leads').delete().eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase lead delete warning:', error.message);
+      });
+    }
+
     showToast('Lead deleted');
   };
 
@@ -262,6 +370,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     setOpportunities((prev) => [newOpp, ...prev]);
 
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('opportunities').insert(newOpp).then(({ error }) => {
+        if (error) console.warn('Supabase opp insert warning:', error.message);
+      });
+    }
+
     addActivity({
       lead_id: newOpp.lead_id,
       opportunity_id: newOpp.id,
@@ -273,9 +387,16 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateOpportunity = (id: string, updates: Partial<Opportunity>) => {
+    const updatedOpp = { ...updates, updated_at: new Date().toISOString() };
     setOpportunities((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, ...updates, updated_at: new Date().toISOString() } : o))
+      prev.map((o) => (o.id === id ? { ...o, ...updatedOpp } : o))
     );
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('opportunities').update(updatedOpp).eq('id', id).then(({ error }) => {
+        if (error) console.warn('Supabase opp update warning:', error.message);
+      });
+    }
   };
 
   const moveOpportunityStage = (id: string, stage: OpportunityStage) => {
@@ -336,6 +457,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     };
 
     setClients((prev) => [newClient, ...prev]);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('clients').insert(newClient).then(({ error }) => {
+        if (error) console.warn('Supabase client insert warning:', error.message);
+      });
+    }
 
     addActivity({
       lead_id: lead.id,
@@ -455,6 +582,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         created_at: nowIso
       };
       setFollowUps((prev) => [newFollowUp, ...prev]);
+
+      if (isSupabaseConfigured) {
+        supabase.from('follow_ups').insert([newFollowUp]).then(({ error }) => {
+          if (error) console.warn('[Supabase] follow_ups insert:', error.message);
+        });
+      }
     }
 
     showToast(`Call recorded for ${lead.business_name}`);
@@ -475,6 +608,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString()
     };
     setActivities((prev) => [newAct, ...prev]);
+
+    if (isSupabaseConfigured) {
+      supabase.from('activities').insert([newAct]).then(({ error }) => {
+        if (error) console.warn('[Supabase] activities insert:', error.message);
+      });
+    }
   };
 
   const getLeadActivities = (leadId: string) => {
@@ -483,11 +622,21 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
   // Follow-ups
   const completeFollowUp = (id: string) => {
+    const completedAt = new Date().toISOString();
     setFollowUps((prev) =>
       prev.map((f) =>
-        f.id === id ? { ...f, status: 'completed', completed_at: new Date().toISOString() } : f
+        f.id === id ? { ...f, status: 'completed', completed_at: completedAt } : f
       )
     );
+    if (isSupabaseConfigured) {
+      supabase
+        .from('follow_ups')
+        .update({ status: 'completed', completed_at: completedAt })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.warn('[Supabase] follow_ups update:', error.message);
+        });
+    }
     showToast('Follow-up marked complete');
   };
 
@@ -561,6 +710,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     if (leadsToAdd.length > 0) {
       setLeads((prev) => [...leadsToAdd, ...prev]);
+      if (isSupabaseConfigured) {
+        supabase.from('leads').insert(leadsToAdd).then(({ error }) => {
+          if (error) console.warn('[Supabase] bulk import error:', error.message);
+        });
+      }
     }
 
     showToast(`Imported ${imported} leads (${duplicates} duplicates skipped)`);
