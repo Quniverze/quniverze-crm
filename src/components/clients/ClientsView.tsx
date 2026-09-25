@@ -2,233 +2,143 @@
 
 import React, { useState } from 'react';
 import { useCRM } from '@/lib/store';
-import {
-  CheckCircle2,
-  Phone,
-  Mail,
-  Calendar,
-  Briefcase,
-  FileText,
-  Clock,
-  ExternalLink,
-  FolderGit2
-} from 'lucide-react';
+import { DeliveryStatus, LeadType } from '@/types/crm';
+import { CheckCircle2, Briefcase, Calendar, Edit2 } from 'lucide-react';
 
 export function ClientsView() {
-  const { clients, activities, projects, setCurrentView } = useCRM();
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(
-    clients[0]?.id || null
+  const { clients, updateClient, setCurrentView } = useCRM();
+  const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
+
+  const filteredClients = clients.filter((c) => {
+    if (typeFilter === 'All') return true;
+    return c.type === typeFilter;
+  });
+
+  const totalContractValue = filteredClients.reduce(
+    (sum, c) => sum + (c.contract_value || 0),
+    0
   );
 
-  const activeClient = clients.find((c) => c.id === selectedClientId) || clients[0];
-
-  // Activities for this client or its originating lead
-  const clientActivities = activities.filter(
-    (a) =>
-      a.client_id === activeClient?.id ||
-      (activeClient?.lead_id && a.lead_id === activeClient.lead_id)
-  );
-
-  // Projects associated with this client
-  const clientProjects = projects.filter(
-    (p) => p.client_id === activeClient?.id || p.name.toLowerCase().includes(activeClient?.business_name.toLowerCase() || '')
-  );
+  const deliveryStatuses: DeliveryStatus[] = [
+    'Not Started',
+    'In Progress',
+    'Delivered',
+    'Active'
+  ];
 
   return (
-    <div className="h-full w-full flex flex-col md:flex-row overflow-hidden bg-[#F4F6F9]">
-      
-      {/* CLIENTS LIST */}
-      <div className="w-full md:w-[360px] h-full border-r border-[#E5E7EB] bg-white flex flex-col flex-shrink-0">
-        <div className="p-4 border-b border-[#E5E7EB]">
-          <span className="section-label">RELATIONSHIPS</span>
-          <h1 className="text-[18px] font-bold text-[#12151C] tracking-tight mt-0.5">
-            Clients ({clients.length})
-          </h1>
-          <p className="text-[12px] text-[#6B6B6B] mt-0.5">
-            Active studio partnerships and retainer accounts.
+    <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-5xl mx-auto w-full space-y-6">
+      {/* Header & Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E7EB] pb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-[#3B82F6]">
+              05 Accounts
+            </span>
+            <span className="text-[#E5E7EB]">/</span>
+            <h1 className="text-[20px] font-bold text-[#12151C] tracking-tight">
+              Clients
+            </h1>
+          </div>
+          <p className="text-[13px] text-[#12151C]/60 mt-0.5">
+            Won opportunities converted to active customer accounts. Total booked value: <span className="font-mono font-bold text-[#12151C]">₹{totalContractValue.toLocaleString()}</span>
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-[#E5E7EB]">
-          {clients.length === 0 ? (
-            <div className="p-8 text-center text-[#6B7280] text-[12.5px]">
-              No active clients yet. When an opportunity is closed Won, it automatically creates an established client account here.
-            </div>
-          ) : (
-            clients.map((c) => {
-              const isSelected = activeClient?.id === c.id;
-              return (
-                <div
-                  key={c.id}
-                  onClick={() => setSelectedClientId(c.id)}
-                  className={`p-3.5 cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'bg-[#EBF3FE] font-medium border-l-2 border-[#3B82F6]'
-                      : 'hover:bg-[#F4F6F9]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[13.5px] text-[#12151C]">
-                      {c.business_name}
-                    </span>
-                    <span className="text-[12px] font-bold text-[#12151C] font-mono">
-                      ₹{c.value.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="text-[12px] text-[#4B5563] mt-0.5 truncate">
-                    {c.project}
-                  </div>
-                  <div className="text-[11px] text-[#6B7280] mt-1 flex items-center gap-2">
-                    <span className="uppercase font-semibold tracking-wider text-[10px] px-1.5 py-0.2 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[#12151C]">
-                      {c.status}
-                    </span>
-                    <span className="font-mono">
-                      {new Date(c.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          )}
+        {/* Type Filter */}
+        <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB] self-start sm:self-auto">
+          {(['All', 'Product', 'Client Work'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                typeFilter === t
+                  ? 'bg-[#12151C] text-white'
+                  : 'text-[#12151C]/70 hover:text-[#12151C]'
+              }`}
+            >
+              {t === 'Product' ? 'Product (NivaOps)' : t}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* CLIENT DETAIL PANE */}
-      <div className="flex-1 h-full bg-[#F4F6F9] overflow-y-auto p-4 md:p-8">
-        {activeClient ? (
-          <div className="max-w-2xl mx-auto space-y-6">
-            
-            {/* Header */}
-            <div className="p-5 bg-white border border-[#E5E7EB] rounded space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="section-label">CLIENT PROFILE</span>
-                  <h2 className="text-[22px] font-bold text-[#12151C] tracking-tight mt-0.5">
-                    {activeClient.business_name}
-                  </h2>
-                  <div className="text-[13px] text-[#6B7280] mt-0.5">
-                    Primary Contact: <span className="text-[#12151C] font-medium">{activeClient.contact_name}</span>
-                  </div>
+      {/* Clients List */}
+      {filteredClients.length === 0 ? (
+        <div className="p-12 text-center bg-white border border-[#E5E7EB]">
+          <Briefcase className="w-10 h-10 text-[#12151C]/30 mx-auto mb-3" />
+          <h3 className="text-[15px] font-semibold text-[#12151C]">No clients yet</h3>
+          <p className="text-[12.5px] text-[#12151C]/60 mt-1 max-w-sm mx-auto">
+            Leads moved to the <span className="font-semibold text-[#12151C]">Won</span> stage in the Pipeline automatically convert into client records here.
+          </p>
+          <button
+            onClick={() => setCurrentView('pipeline')}
+            className="mt-4 px-4 py-2 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors"
+          >
+            Go to Pipeline
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredClients.map((client) => (
+            <div
+              key={client.id}
+              className="p-4 bg-white border border-[#E5E7EB] hover:border-[#12151C] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase bg-[#12151C] text-white px-1.5 py-0.5">
+                    {client.type}
+                  </span>
+                  <h3 className="text-[15px] font-bold text-[#12151C]">
+                    {client.business_name}
+                  </h3>
+                  <span className="text-[11px] font-mono text-[#12151C]/60">
+                    Won on {new Date(client.created_at).toLocaleDateString()}
+                  </span>
                 </div>
 
+                {client.notes && (
+                  <p className="text-[12px] text-[#12151C]/70 italic">
+                    {client.notes}
+                  </p>
+                )}
+              </div>
+
+              {/* Status and Value */}
+              <div className="flex items-center gap-4 self-end md:self-center shrink-0">
                 <div className="text-right">
-                  <div className="text-[20px] font-bold text-[#12151C] font-mono">
-                    ₹{activeClient.value.toLocaleString()}
-                  </div>
-                  <div className="text-[10.5px] text-[#6B7280] uppercase tracking-wider">
+                  <span className="text-[10px] font-mono text-[#12151C]/50 uppercase block">
                     Contract Value
-                  </div>
+                  </span>
+                  <span className="text-[14px] font-mono font-bold text-[#12151C]">
+                    {client.contract_value ? `₹${client.contract_value.toLocaleString()}` : '—'}
+                  </span>
                 </div>
-              </div>
 
-              {/* Contact Actions */}
-              <div className="flex items-center gap-2 pt-2 border-t border-[#E5E7EB]">
-                {activeClient.phone && (
-                  <a
-                    href={`tel:${activeClient.phone}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#12151C] hover:bg-black text-white text-[12px] font-medium rounded transition-colors"
+                {/* Delivery Status Selector */}
+                <div className="space-y-1">
+                  <select
+                    value={client.delivery_status}
+                    onChange={(e) =>
+                      updateClient(client.id, {
+                        delivery_status: e.target.value as DeliveryStatus
+                      })
+                    }
+                    className="px-2.5 py-1.5 text-[11.5px] font-mono font-medium bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
                   >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>Call {activeClient.phone}</span>
-                  </a>
-                )}
-                {activeClient.email && (
-                  <a
-                    href={`mailto:${activeClient.email}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C] bg-white text-[12px] font-medium rounded transition-colors"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>{activeClient.email}</span>
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Active Deliverable / Project Context */}
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="section-label">DELIVERABLES &amp; WORK SCOPE</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C]">
-                  {activeClient.status.toUpperCase()}
-                </span>
-              </div>
-              <div className="text-[14px] font-semibold text-[#12151C]">
-                {activeClient.project}
-              </div>
-              {activeClient.notes && (
-                <p className="text-[12.5px] text-[#4B5563] leading-relaxed pt-2 border-t border-[#E5E7EB]">
-                  {activeClient.notes}
-                </p>
-              )}
-            </div>
-
-            {/* Connected Projects */}
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="section-label">CONNECTED STUDIO PROJECTS</span>
-                <button
-                  onClick={() => setCurrentView('projects')}
-                  className="text-[11.5px] font-medium text-[#4B5563] hover:text-[#12151C] flex items-center gap-1"
-                >
-                  <span>All Projects</span>
-                  <ExternalLink className="w-3 h-3 text-[#3B82F6]" />
-                </button>
-              </div>
-
-              {clientProjects.length === 0 ? (
-                <div className="text-[12px] text-[#6B7280]">
-                  Client work tracked under standard studio pipeline.
+                    {deliveryStatuses.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {clientProjects.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => setCurrentView('projects')}
-                      className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C] rounded cursor-pointer transition-colors flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="font-semibold text-[13px] text-[#12151C]">{p.name}</div>
-                        <div className="text-[11.5px] text-[#6B7280]">{p.tagline}</div>
-                      </div>
-                      <span className="text-[11px] font-mono text-[#6B7280]">{p.category}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Historical Activity Stream */}
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded space-y-3">
-              <span className="section-label">ACCOUNT HISTORY &amp; AUDIT TRAIL</span>
-              <div className="divide-y divide-[#E5E7EB]">
-                {clientActivities.length === 0 ? (
-                  <div className="text-[12px] text-[#6B7280] py-2">
-                    No historical logs recorded.
-                  </div>
-                ) : (
-                  clientActivities.map((act) => (
-                    <div key={act.id} className="py-2.5 text-[12.5px] space-y-0.5">
-                      <div className="text-[#12151C] font-medium leading-snug">
-                        {act.body}
-                      </div>
-                      <div className="text-[11px] text-[#6B7280] font-mono">
-                        {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(act.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                      </div>
-                    </div>
-                  ))
-                )}
               </div>
             </div>
-
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center text-[13px] text-[#6B7280]">
-            Select a client account to inspect.
-          </div>
-        )}
-      </div>
-
+          ))}
+        </div>
+      )}
     </div>
   );
 }

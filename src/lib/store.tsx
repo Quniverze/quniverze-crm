@@ -1,829 +1,354 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
-  User,
-  UserRole,
-  CRMView,
   Lead,
-  Opportunity,
-  OpportunityStage,
-  FollowUp,
+  LeadStage,
   Activity,
+  ActivityType,
   Client,
-  Project,
   CallOutcome,
-  FollowUpTimingOption
+  CRMView,
+  PIPELINE_STAGES
 } from '@/types/crm';
-import {
-  SEED_USERS,
-  SEED_LEADS,
-  SEED_OPPORTUNITIES,
-  SEED_FOLLOW_UPS,
-  SEED_ACTIVITIES,
-  SEED_CLIENTS,
-  SEED_PROJECTS
-} from './seed-data';
-import { supabase, isSupabaseConfigured } from './supabase';
 
 interface CRMContextType {
-  // Current user & role
-  currentUser: User;
-  setRole: (role: UserRole) => void;
-
-  // View navigation
+  // Navigation & Modals
   currentView: CRMView;
   setCurrentView: (view: CRMView) => void;
-
-  // Selected lead for detail/call
   selectedLeadId: string | null;
   setSelectedLeadId: (id: string | null) => void;
+  quickAddOpen: boolean;
+  setQuickAddOpen: (open: boolean) => void;
+  searchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
+  teamModalOpen: boolean;
+  setTeamModalOpen: (open: boolean) => void;
 
   // Leads
   leads: Lead[];
-  addLead: (data: Partial<Lead>) => Lead;
+  addLead: (data: Omit<Lead, 'id' | 'created_at' | 'updated_at'>) => Lead;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
-  getLead: (id: string) => Lead | undefined;
+  advanceStage: (id: string) => void;
+  setStage: (id: string, stage: LeadStage) => void;
 
-  // Opportunities & Pipeline
-  opportunities: Opportunity[];
-  addOpportunity: (data: Partial<Opportunity>) => Opportunity;
-  updateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
-  moveOpportunityStage: (id: string, stage: OpportunityStage) => void;
-  convertToClient: (opportunityId: string) => Client | null;
-
-  // Projects (Products & Client Work)
-  projects: Project[];
-  addProject: (data: Partial<Project>) => Project;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-
-  // Call Flow (Outreach Executive)
-  processCallOutcome: (params: {
-    leadId: string;
-    outcome: CallOutcome;
-    followUpTiming: FollowUpTimingOption;
-    customDate?: string;
-    note?: string;
-    assignToFounder?: boolean;
-    estimatedValue?: number;
-  }) => void;
-
-  // Activities
+  // Activities (inline per lead)
   activities: Activity[];
-  addActivity: (act: {
-    lead_id?: string;
-    opportunity_id?: string;
-    client_id?: string;
-    type: Activity['type'];
-    body: string;
-  }) => void;
   getLeadActivities: (leadId: string) => Activity[];
+  addActivity: (leadId: string, type: ActivityType, text: string) => void;
+  logCall: (
+    leadId: string,
+    outcome: CallOutcome,
+    notes: string,
+    nextAction: string,
+    nextActionDue: string
+  ) => void;
 
-  // Follow-ups
-  followUps: FollowUp[];
-  completeFollowUp: (id: string) => void;
-  overdueFollowUps: FollowUp[];
-  todayFollowUps: FollowUp[];
-  upcomingFollowUps: FollowUp[];
-
-  // Clients
+  // Clients (Won deals)
   clients: Client[];
+  updateClient: (id: string, updates: Partial<Client>) => void;
 
-  // Modals & Utilities
-  searchModalOpen: boolean;
-  setSearchModalOpen: (open: boolean) => void;
-  quickAddOpen: boolean;
-  setQuickAddOpen: (open: boolean) => void;
-  importModalOpen: boolean;
-  setImportModalOpen: (open: boolean) => void;
-  importLeads: (leads: Array<Partial<Lead>>) => { imported: number; duplicates: number };
+  // Team Members
+  teamMembers: string[];
+  addTeamMember: (name: string) => void;
+  removeTeamMember: (name: string) => void;
 
-  // Toast feedback
-  toastMessage: string | null;
+  // Toast
+  toast: string | null;
   showToast: (msg: string) => void;
-
-  // Cloud sync
-  refreshSync: () => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | null>(null);
 
-const STORAGE_KEY_PREFIX = 'quniverze_crm_prod_';
+const STORAGE_KEYS = {
+  LEADS: 'quniverze_crm_leads',
+  ACTIVITIES: 'quniverze_crm_activities',
+  CLIENTS: 'quniverze_crm_clients',
+  TEAM: 'quniverze_crm_team',
+  VIEW: 'quniverze_crm_view'
+};
 
 export function CRMProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<UserRole>('founder');
-  const [currentView, setCurrentView] = useState<CRMView>('overview');
+  const [currentView, setCurrentView] = useState<CRMView>('today');
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
+  // Core Data initialized empty (Zero demo data)
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>(SEED_PROJECTS);
+  const [teamMembers, setTeamMembers] = useState<string[]>(['Abid']);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [importModalOpen, setImportModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Initialize from LocalStorage or clean production state
+  // Hydrate from localStorage
   useEffect(() => {
     try {
-      // Clear legacy demo cache keys from prior test sessions
-      const legacyKeys = [
-        'quniverze_crm_v3_leads', 'quniverze_crm_v3_opps', 'quniverze_crm_v3_followups',
-        'quniverze_crm_v3_activities', 'quniverze_crm_v3_clients',
-        'quniverze_crm_v2_leads', 'quniverze_crm_leads'
-      ];
-      legacyKeys.forEach((k) => localStorage.removeItem(k));
+      const storedLeads = localStorage.getItem(STORAGE_KEYS.LEADS);
+      if (storedLeads) setLeads(JSON.parse(storedLeads));
 
-      const savedRole = localStorage.getItem(STORAGE_KEY_PREFIX + 'role') as UserRole;
-      if (savedRole === 'founder' || savedRole === 'outreach') {
-        setRoleState(savedRole);
+      const storedActivities = localStorage.getItem(STORAGE_KEYS.ACTIVITIES);
+      if (storedActivities) setActivities(JSON.parse(storedActivities));
+
+      const storedClients = localStorage.getItem(STORAGE_KEYS.CLIENTS);
+      if (storedClients) setClients(JSON.parse(storedClients));
+
+      const storedTeam = localStorage.getItem(STORAGE_KEYS.TEAM);
+      if (storedTeam) {
+        const parsed = JSON.parse(storedTeam);
+        if (Array.isArray(parsed) && parsed.length > 0) setTeamMembers(parsed);
       }
 
-      const savedView = localStorage.getItem(STORAGE_KEY_PREFIX + 'view') as CRMView;
-      if (savedView) {
-        setCurrentView(savedView);
-      }
-
-      const savedLeads = localStorage.getItem(STORAGE_KEY_PREFIX + 'leads');
-      const savedOpps = localStorage.getItem(STORAGE_KEY_PREFIX + 'opps');
-      const savedFUs = localStorage.getItem(STORAGE_KEY_PREFIX + 'followups');
-      const savedActs = localStorage.getItem(STORAGE_KEY_PREFIX + 'activities');
-      const savedClients = localStorage.getItem(STORAGE_KEY_PREFIX + 'clients');
-      const savedProjects = localStorage.getItem(STORAGE_KEY_PREFIX + 'projects');
-
-      if (savedLeads) setLeads(JSON.parse(savedLeads));
-      if (savedOpps) setOpportunities(JSON.parse(savedOpps));
-      if (savedFUs) setFollowUps(JSON.parse(savedFUs));
-      if (savedActs) setActivities(JSON.parse(savedActs));
-      if (savedClients) setClients(JSON.parse(savedClients));
-      if (savedProjects) setProjects(JSON.parse(savedProjects));
+      const storedView = localStorage.getItem(STORAGE_KEYS.VIEW) as CRMView | null;
+      if (storedView) setCurrentView(storedView);
     } catch (e) {
       console.error('Failed to load CRM state from localStorage', e);
-    }
-
-    // Live cloud synchronization via Supabase
-    if (isSupabaseConfigured && supabase) {
-      const syncWithSupabase = async () => {
-        try {
-          const [leadsRes, oppsRes, fuRes, actsRes, clientsRes] = await Promise.all([
-            supabase.from('leads').select('*').order('created_at', { ascending: false }),
-            supabase.from('opportunities').select('*').order('created_at', { ascending: false }),
-            supabase.from('follow_ups').select('*').order('due_at', { ascending: true }),
-            supabase.from('activities').select('*').order('created_at', { ascending: false }),
-            supabase.from('clients').select('*').order('created_at', { ascending: false })
-          ]);
-
-          if (leadsRes.error) {
-            console.warn('Supabase not ready or table missing:', leadsRes.error.message);
-            return;
-          }
-
-          // In production: set actual real records from Supabase
-          setLeads(leadsRes.data || []);
-          setOpportunities(oppsRes.data || []);
-          setFollowUps(fuRes.data || []);
-          setActivities(actsRes.data || []);
-          setClients(clientsRes.data || []);
-        } catch (err) {
-          console.warn('Supabase sync skipped, continuing with local store:', err);
-        }
-      };
-
-      syncWithSupabase();
-
-      // Realtime listener across devices
-      const channel = supabase
-        .channel('crm-realtime-sync')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setLeads((prev) => prev.some(l => l.id === payload.new.id) ? prev : [payload.new as Lead, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setLeads((prev) => prev.map(l => l.id === payload.new.id ? payload.new as Lead : l));
-          } else if (payload.eventType === 'DELETE') {
-            setLeads((prev) => prev.filter(l => l.id !== payload.old.id));
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'opportunities' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setOpportunities((prev) => prev.some(o => o.id === payload.new.id) ? prev : [payload.new as Opportunity, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setOpportunities((prev) => prev.map(o => o.id === payload.new.id ? payload.new as Opportunity : o));
-          } else if (payload.eventType === 'DELETE') {
-            setOpportunities((prev) => prev.filter(o => o.id !== payload.old.id));
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setActivities((prev) => prev.some(a => a.id === payload.new.id) ? prev : [payload.new as Activity, ...prev]);
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'follow_ups' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setFollowUps((prev) => prev.some(f => f.id === payload.new.id) ? prev : [payload.new as FollowUp, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setFollowUps((prev) => prev.map(f => f.id === payload.new.id ? payload.new as FollowUp : f));
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setClients((prev) => prev.some(c => c.id === payload.new.id) ? prev : [payload.new as Client, ...prev]);
-          }
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    } finally {
+      setIsLoaded(true);
     }
   }, []);
 
-  // Sync to LocalStorage
+  // Persist to localStorage
   useEffect(() => {
-    if (leads.length > 0) {
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'leads', JSON.stringify(leads));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'opps', JSON.stringify(opportunities));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'followups', JSON.stringify(followUps));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'activities', JSON.stringify(activities));
-      localStorage.setItem(STORAGE_KEY_PREFIX + 'clients', JSON.stringify(clients));
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(leads));
+    } catch (e) {
+      console.error('Failed to save leads', e);
     }
-    localStorage.setItem(STORAGE_KEY_PREFIX + 'projects', JSON.stringify(projects));
-  }, [leads, opportunities, followUps, activities, clients, projects]);
+  }, [leads, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
+    } catch (e) {
+      console.error('Failed to save activities', e);
+    }
+  }, [activities, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.CLIENTS, JSON.stringify(clients));
+    } catch (e) {
+      console.error('Failed to save clients', e);
+    }
+  }, [clients, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(teamMembers));
+    } catch (e) {
+      console.error('Failed to save team', e);
+    }
+  }, [teamMembers, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.VIEW, currentView);
+    } catch (e) {
+      console.error('Failed to save view', e);
+    }
+  }, [currentView, isLoaded]);
 
   const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((current) => (current === msg ? null : current));
-    }, 2800);
-  };
-
-  const handleSetCurrentView = (view: CRMView) => {
-    setCurrentView(view);
-    localStorage.setItem(STORAGE_KEY_PREFIX + 'view', view);
-  };
-
-  const currentUser: User = useMemo(() => {
-    return SEED_USERS.find((u) => u.role === role) || SEED_USERS[0];
-  }, [role]);
-
-  const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    localStorage.setItem(STORAGE_KEY_PREFIX + 'role', newRole);
-    if (newRole === 'founder') {
-      handleSetCurrentView('overview');
-      showToast('Switched to Founder Command Center');
-    } else {
-      handleSetCurrentView('followups');
-      showToast('Switched to Outreach Execution');
-    }
-  };
-
-  // Projects CRUD
-  const addProject = (data: Partial<Project>): Project => {
-    const newPrj: Project = {
-      id: 'prj_' + Date.now(),
-      name: data.name || 'Untitled Project',
-      category: data.category || 'client',
-      tagline: data.tagline || '',
-      description: data.description || '',
-      client_id: data.client_id,
-      status: data.status || 'active',
-      tech_stack: data.tech_stack || ['Next.js', 'TypeScript', 'Tailwind'],
-      monthly_revenue: data.monthly_revenue,
-      contract_value: data.contract_value,
-      lead_owner: data.lead_owner || currentUser.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    setProjects((prev) => [newPrj, ...prev]);
-    showToast(`Project created: ${newPrj.name}`);
-    return newPrj;
-  };
-
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p))
-    );
-    showToast('Project updated');
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
   };
 
   // Lead CRUD
-  const addLead = (data: Partial<Lead>): Lead => {
+  const addLead = (data: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Lead => {
+    const now = new Date().toISOString();
     const newLead: Lead = {
-      id: 'lead_' + Date.now(),
-      business_name: data.business_name || 'Untitled Business',
-      contact_name: data.contact_name || '',
-      phone: data.phone || '',
-      whatsapp: data.whatsapp || data.phone || '',
-      email: data.email || '',
-      website: data.website || '',
-      instagram: data.instagram || '',
-      industry: data.industry || 'Other',
-      location: data.location || 'Kozhikode',
-      lead_source: data.lead_source || 'Direct Entry',
-      status: data.status || 'To Call',
-      assigned_to: data.assigned_to || (role === 'outreach' ? 'usr_outreach' : 'usr_founder'),
-      description: data.description || '',
-      observation: data.observation || '',
-      notes: data.notes || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      ...data,
+      id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      created_at: now,
+      updated_at: now
     };
 
     setLeads((prev) => [newLead, ...prev]);
 
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('leads').insert(newLead).then(({ error }) => {
-        if (error) console.warn('Supabase lead insert warning:', error.message);
-      });
-    }
-
-    // Append created activity
-    addActivity({
+    // Initial activity
+    const initAct: Activity = {
+      id: 'act_' + Date.now(),
       lead_id: newLead.id,
-      type: 'created',
-      body: `Lead created by ${currentUser.name}.`
-    });
+      type: 'stage_change',
+      text: `Lead created in ${newLead.stage} stage (${newLead.type}). Assigned to ${newLead.assigned_to}.`,
+      created_at: now
+    };
+    setActivities((prev) => [initAct, ...prev]);
 
     showToast(`Lead created: ${newLead.business_name}`);
     return newLead;
   };
 
   const updateLead = (id: string, updates: Partial<Lead>) => {
-    const updatedLead = { ...updates, updated_at: new Date().toISOString() };
+    const now = new Date().toISOString();
     setLeads((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, ...updatedLead } : l))
+      prev.map((lead) => (lead.id === id ? { ...lead, ...updates, updated_at: now } : lead))
     );
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('leads').update(updatedLead).eq('id', id).then(({ error }) => {
-        if (error) console.warn('Supabase lead update warning:', error.message);
-      });
-    }
   };
 
   const deleteLead = (id: string) => {
     setLeads((prev) => prev.filter((l) => l.id !== id));
-    setOpportunities((prev) => prev.filter((o) => o.lead_id !== id));
-    setFollowUps((prev) => prev.filter((f) => f.lead_id !== id));
     setActivities((prev) => prev.filter((a) => a.lead_id !== id));
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('leads').delete().eq('id', id).then(({ error }) => {
-        if (error) console.warn('Supabase lead delete warning:', error.message);
-      });
-    }
-
+    if (selectedLeadId === id) setSelectedLeadId(null);
     showToast('Lead deleted');
   };
 
-  const getLead = (id: string) => leads.find((l) => l.id === id);
-
-  // Opportunities & Pipeline
-  const addOpportunity = (data: Partial<Opportunity>): Opportunity => {
-    const newOpp: Opportunity = {
-      id: 'opp_' + Date.now(),
-      lead_id: data.lead_id!,
-      estimated_value: data.estimated_value || 35000,
-      probability: data.probability || 50,
-      stage: data.stage || 'Qualified',
-      assigned_to: data.assigned_to || 'usr_founder',
-      next_action: data.next_action || 'Founder review',
-      next_follow_up_at: data.next_follow_up_at,
-      notes: data.notes || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    setOpportunities((prev) => [newOpp, ...prev]);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('opportunities').insert(newOpp).then(({ error }) => {
-        if (error) console.warn('Supabase opp insert warning:', error.message);
-      });
-    }
-
-    addActivity({
-      lead_id: newOpp.lead_id,
-      opportunity_id: newOpp.id,
-      type: 'stage_changed',
-      body: `Opportunity created in ${newOpp.stage} (₹${newOpp.estimated_value.toLocaleString()})`
-    });
-
-    return newOpp;
-  };
-
-  const updateOpportunity = (id: string, updates: Partial<Opportunity>) => {
-    const updatedOpp = { ...updates, updated_at: new Date().toISOString() };
-    setOpportunities((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, ...updatedOpp } : o))
-    );
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('opportunities').update(updatedOpp).eq('id', id).then(({ error }) => {
-        if (error) console.warn('Supabase opp update warning:', error.message);
-      });
-    }
-  };
-
-  const moveOpportunityStage = (id: string, stage: OpportunityStage) => {
-    const opp = opportunities.find((o) => o.id === id);
-    if (!opp) return;
-
-    updateOpportunity(id, { stage });
-
-    // Also sync lead status
-    const leadStatusMap: Record<OpportunityStage, Lead['status']> = {
-      New: 'New',
-      Qualified: 'Qualified',
-      Discovery: 'Meeting',
-      Proposal: 'Proposal',
-      Negotiation: 'Negotiation',
-      Won: 'Won',
-      Lost: 'Lost'
-    };
-    updateLead(opp.lead_id, { status: leadStatusMap[stage] });
-
-    addActivity({
-      lead_id: opp.lead_id,
-      opportunity_id: opp.id,
-      type: 'stage_changed',
-      body: `Stage updated to ${stage} by ${currentUser.name}.`
-    });
-
-    if (stage === 'Won') {
-      convertToClient(opp.id);
-      showToast(`Deal Won! Converted to Client.`);
-    } else {
-      showToast(`Moved to ${stage}`);
-    }
-  };
-
-  const convertToClient = (opportunityId: string): Client | null => {
-    const opp = opportunities.find((o) => o.id === opportunityId);
-    if (!opp) return null;
-    const lead = leads.find((l) => l.id === opp.lead_id);
-    if (!lead) return null;
-
-    // Check if client already exists
-    const existing = clients.find((c) => c.lead_id === lead.id);
-    if (existing) return existing;
-
-    const newClient: Client = {
-      id: 'cli_' + Date.now(),
-      lead_id: lead.id,
-      business_name: lead.business_name,
-      contact_name: lead.contact_name,
-      phone: lead.phone,
-      email: lead.email,
-      project: 'Custom Web & Software Development',
-      value: opp.estimated_value,
-      status: 'active',
-      notes: opp.notes || lead.notes || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    setClients((prev) => [newClient, ...prev]);
-
-    if (isSupabaseConfigured && supabase) {
-      supabase.from('clients').insert(newClient).then(({ error }) => {
-        if (error) console.warn('Supabase client insert warning:', error.message);
-      });
-    }
-
-    addActivity({
-      lead_id: lead.id,
-      opportunity_id: opp.id,
-      client_id: newClient.id,
-      type: 'converted',
-      body: `Deal closed! Converted into active Client (Project Value: ₹${opp.estimated_value.toLocaleString()}).`
-    });
-
-    return newClient;
-  };
-
-  // Call Flow Engine (Outreach Executive)
-  const processCallOutcome = ({
-    leadId,
-    outcome,
-    followUpTiming,
-    customDate,
-    note,
-    assignToFounder,
-    estimatedValue
-  }: {
-    leadId: string;
-    outcome: CallOutcome;
-    followUpTiming: FollowUpTimingOption;
-    customDate?: string;
-    note?: string;
-    assignToFounder?: boolean;
-    estimatedValue?: number;
-  }) => {
-    const lead = leads.find((l) => l.id === leadId);
+  const setStage = (id: string, stage: LeadStage) => {
+    const lead = leads.find((l) => l.id === id);
     if (!lead) return;
 
-    const nowIso = new Date().toISOString();
+    const oldStage = lead.stage;
+    const now = new Date().toISOString();
 
-    // 1. Calculate follow-up due date
-    let followUpDate: Date | null = new Date();
-    if (followUpTiming === 'Tomorrow') {
-      followUpDate.setDate(followUpDate.getDate() + 1);
-    } else if (followUpTiming === '3 Days') {
-      followUpDate.setDate(followUpDate.getDate() + 3);
-    } else if (followUpTiming === '7 Days') {
-      followUpDate.setDate(followUpDate.getDate() + 7);
-    } else if (followUpTiming === 'Custom' && customDate) {
-      followUpDate = new Date(customDate);
-    } else {
-      followUpDate = null;
-    }
+    updateLead(id, { stage });
 
-    // 2. Map outcome to Lead status
-    let nextStatus = lead.status;
-    if (outcome === 'Interested') {
-      nextStatus = assignToFounder ? 'Qualified' : 'Interested';
-    } else if (outcome === 'Meeting Requested') {
-      nextStatus = 'Meeting';
-    } else if (outcome === 'Not Interested' || outcome === 'Wrong Number') {
-      nextStatus = 'Lost';
-    } else if (outcome === 'Call Later' || outcome === 'Busy' || outcome === 'No Answer' || outcome === 'WhatsApp Sent') {
-      nextStatus = 'Contacted';
-    }
-
-    // 3. Update Lead record
-    const updatedLeadFields: Partial<Lead> = {
-      status: nextStatus,
-      last_contact_at: nowIso,
-      next_follow_up_at: followUpDate ? followUpDate.toISOString() : undefined
+    // Activity
+    const act: Activity = {
+      id: 'act_' + Date.now(),
+      lead_id: id,
+      type: 'stage_change',
+      text: `Stage changed from ${oldStage} to ${stage}.`,
+      created_at: now
     };
+    setActivities((prev) => [act, ...prev]);
 
-    if (assignToFounder) {
-      updatedLeadFields.assigned_to = 'usr_founder';
-    }
-    if (note) {
-      updatedLeadFields.notes = lead.notes ? `${lead.notes}\n${note}` : note;
-    }
-
-    updateLead(leadId, updatedLeadFields);
-
-    // 4. Log Call Activity
-    const actBody = `Call outcome: ${outcome}.${note ? ` Note: "${note}"` : ''}${
-      assignToFounder ? ' Handed off to Founder.' : ''
-    }`;
-    addActivity({
-      lead_id: leadId,
-      type: outcome === 'Interested' || outcome === 'Meeting Requested' ? 'outcome' : 'called',
-      body: actBody
-    });
-
-    // 5. If assigned to founder or interested, ensure opportunity exists
-    if (outcome === 'Interested' || outcome === 'Meeting Requested' || assignToFounder) {
-      const existingOpp = opportunities.find((o) => o.lead_id === leadId);
-      if (!existingOpp) {
-        addOpportunity({
-          lead_id: leadId,
-          stage: outcome === 'Meeting Requested' ? 'Discovery' : 'Qualified',
-          estimated_value: estimatedValue || 35000,
-          assigned_to: 'usr_founder',
-          next_action: outcome === 'Meeting Requested' ? 'Conduct client meeting' : 'Founder follow-up call'
-        });
+    // Auto-create client on "Won"
+    if (stage === 'Won') {
+      const existingClient = clients.find((c) => c.lead_id === id);
+      if (!existingClient) {
+        const newClient: Client = {
+          id: 'client_' + Date.now(),
+          lead_id: id,
+          business_name: lead.business_name,
+          type: lead.type,
+          contract_value: lead.value || 0,
+          notes: lead.angle || '',
+          delivery_status: 'Not Started',
+          created_at: now
+        };
+        setClients((prev) => [newClient, ...prev]);
+        showToast(`🎉 Deal Won! Converted to Client: ${lead.business_name}`);
       }
+    } else {
+      showToast(`Stage updated to ${stage}`);
     }
+  };
 
-    // 6. Schedule Follow-up if applicable
-    if (followUpDate) {
-      const newFollowUp: FollowUp = {
-        id: 'fu_' + Date.now(),
-        lead_id: leadId,
-        assigned_to: assignToFounder ? 'usr_founder' : 'usr_outreach',
-        due_at: followUpDate.toISOString(),
-        action:
-          outcome === 'Interested'
-            ? 'Follow up with interested prospect'
-            : outcome === 'Meeting Requested'
-            ? 'Discovery meeting with prospect'
-            : `Follow-up call (${outcome})`,
-        status: 'pending',
-        notes: note,
-        created_at: nowIso
-      };
-      setFollowUps((prev) => [newFollowUp, ...prev]);
+  const advanceStage = (id: string) => {
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return;
 
-      if (isSupabaseConfigured) {
-        supabase.from('follow_ups').insert([newFollowUp]).then(({ error }) => {
-          if (error) console.warn('[Supabase] follow_ups insert:', error.message);
-        });
-      }
+    const currentIndex = PIPELINE_STAGES.indexOf(lead.stage);
+    if (currentIndex >= 0 && currentIndex < PIPELINE_STAGES.length - 2) {
+      // Advance to next stage before Won/Lost
+      const nextStage = PIPELINE_STAGES[currentIndex + 1];
+      setStage(id, nextStage);
+    } else if (lead.stage === 'Negotiation') {
+      setStage(id, 'Won');
     }
-
-    showToast(`Call recorded for ${lead.business_name}`);
   };
 
   // Activities
-  const addActivity = (act: {
-    lead_id?: string;
-    opportunity_id?: string;
-    client_id?: string;
-    type: Activity['type'];
-    body: string;
-  }) => {
+  const getLeadActivities = (leadId: string): Activity[] => {
+    return activities
+      .filter((a) => a.lead_id === leadId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  };
+
+  const addActivity = (leadId: string, type: ActivityType, text: string) => {
     const newAct: Activity = {
       id: 'act_' + Date.now(),
-      person_id: currentUser.id,
-      ...act,
+      lead_id: leadId,
+      type,
+      text,
       created_at: new Date().toISOString()
     };
     setActivities((prev) => [newAct, ...prev]);
-
-    if (isSupabaseConfigured) {
-      supabase.from('activities').insert([newAct]).then(({ error }) => {
-        if (error) console.warn('[Supabase] activities insert:', error.message);
-      });
-    }
+    showToast('Activity logged');
   };
 
-  const getLeadActivities = (leadId: string) => {
-    return activities.filter((a) => a.lead_id === leadId);
+  const logCall = (
+    leadId: string,
+    outcome: CallOutcome,
+    notes: string,
+    nextAction: string,
+    nextActionDue: string
+  ) => {
+    const actText = notes ? `Call outcome: ${outcome}. Note: ${notes}` : `Call outcome: ${outcome}.`;
+    addActivity(leadId, 'call', actText);
+
+    updateLead(leadId, {
+      next_action: nextAction,
+      next_action_due: nextActionDue
+    });
+
+    showToast(`Call logged: ${outcome}`);
   };
 
-  // Follow-ups
-  const completeFollowUp = (id: string) => {
-    const completedAt = new Date().toISOString();
-    setFollowUps((prev) =>
-      prev.map((f) =>
-        f.id === id ? { ...f, status: 'completed', completed_at: completedAt } : f
-      )
+  // Clients
+  const updateClient = (id: string, updates: Partial<Client>) => {
+    setClients((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
-    if (isSupabaseConfigured) {
-      supabase
-        .from('follow_ups')
-        .update({ status: 'completed', completed_at: completedAt })
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.warn('[Supabase] follow_ups update:', error.message);
-        });
-    }
-    showToast('Follow-up marked complete');
+    showToast('Client updated');
   };
 
-  const nowMs = Date.now();
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
-  const todayEndMs = todayEnd.getTime();
-
-  const overdueFollowUps = useMemo(() => {
-    return followUps.filter((f) => f.status === 'pending' && new Date(f.due_at).getTime() < nowMs);
-  }, [followUps, nowMs]);
-
-  const todayFollowUps = useMemo(() => {
-    return followUps.filter((f) => {
-      if (f.status !== 'pending') return false;
-      const t = new Date(f.due_at).getTime();
-      return t >= nowMs && t <= todayEndMs;
-    });
-  }, [followUps, nowMs, todayEndMs]);
-
-  const upcomingFollowUps = useMemo(() => {
-    return followUps.filter((f) => f.status === 'pending' && new Date(f.due_at).getTime() > todayEndMs);
-  }, [followUps, todayEndMs]);
-
-  // CSV Lead Import with duplicate detection
-  const importLeads = (newLeadsData: Array<Partial<Lead>>) => {
-    let imported = 0;
-    let duplicates = 0;
-
-    const existingPhones = new Set(leads.map((l) => l.phone.replace(/\D/g, '')));
-    const existingNames = new Set(leads.map((l) => l.business_name.toLowerCase().trim()));
-
-    const leadsToAdd: Lead[] = [];
-
-    newLeadsData.forEach((row) => {
-      const cleanPhone = (row.phone || '').replace(/\D/g, '');
-      const cleanName = (row.business_name || '').toLowerCase().trim();
-
-      if ((cleanPhone && existingPhones.has(cleanPhone)) || existingNames.has(cleanName)) {
-        duplicates++;
-        return;
-      }
-
-      if (cleanPhone) existingPhones.add(cleanPhone);
-      if (cleanName) existingNames.add(cleanName);
-
-      const lead: Lead = {
-        id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        business_name: row.business_name || 'Imported Business',
-        contact_name: row.contact_name || '',
-        phone: row.phone || '',
-        whatsapp: row.whatsapp || row.phone || '',
-        email: row.email || '',
-        website: row.website || '',
-        instagram: row.instagram || '',
-        industry: row.industry || 'Other',
-        location: row.location || 'Kozhikode',
-        lead_source: 'CSV Import',
-        status: 'To Call',
-        assigned_to: 'usr_outreach',
-        description: row.description || '',
-        observation: row.observation || '',
-        notes: row.notes || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      leadsToAdd.push(lead);
-      imported++;
-    });
-
-    if (leadsToAdd.length > 0) {
-      setLeads((prev) => [...leadsToAdd, ...prev]);
-      if (isSupabaseConfigured) {
-        supabase.from('leads').insert(leadsToAdd).then(({ error }) => {
-          if (error) console.warn('[Supabase] bulk import error:', error.message);
-        });
-      }
-    }
-
-    showToast(`Imported ${imported} leads (${duplicates} duplicates skipped)`);
-    return { imported, duplicates };
+  // Team
+  const addTeamMember = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || teamMembers.includes(trimmed)) return;
+    setTeamMembers((prev) => [...prev, trimmed]);
+    showToast(`Added team member: ${trimmed}`);
   };
 
-  const refreshSync = async () => {
-    if (!isSupabaseConfigured || !supabase) {
-      showToast('Offline mode (Local storage active)');
+  const removeTeamMember = (name: string) => {
+    if (name === 'Abid') {
+      showToast('Cannot remove Abid (primary admin)');
       return;
     }
-    try {
-      const [leadsRes, oppsRes, fuRes, actsRes, clientsRes] = await Promise.all([
-        supabase.from('leads').select('*').order('created_at', { ascending: false }),
-        supabase.from('opportunities').select('*').order('created_at', { ascending: false }),
-        supabase.from('follow_ups').select('*').order('due_at', { ascending: true }),
-        supabase.from('activities').select('*').order('created_at', { ascending: false }),
-        supabase.from('clients').select('*').order('created_at', { ascending: false })
-      ]);
-
-      if (!leadsRes.error) {
-        setLeads(leadsRes.data || []);
-        setOpportunities(oppsRes.data || []);
-        setFollowUps(fuRes.data || []);
-        setActivities(actsRes.data || []);
-        setClients(clientsRes.data || []);
-        showToast('Synchronized with Supabase cloud');
-      } else {
-        showToast('Sync error: ' + leadsRes.error.message);
-      }
-    } catch {
-      showToast('Failed to sync with Supabase');
-    }
+    setTeamMembers((prev) => prev.filter((m) => m !== name));
+    showToast(`Removed team member: ${name}`);
   };
 
   return (
     <CRMContext.Provider
       value={{
-        currentUser,
-        setRole,
         currentView,
-        setCurrentView: handleSetCurrentView,
+        setCurrentView,
         selectedLeadId,
         setSelectedLeadId,
+        quickAddOpen,
+        setQuickAddOpen,
+        searchOpen,
+        setSearchOpen,
+        teamModalOpen,
+        setTeamModalOpen,
         leads,
         addLead,
         updateLead,
         deleteLead,
-        getLead,
-        opportunities,
-        addOpportunity,
-        updateOpportunity,
-        moveOpportunityStage,
-        convertToClient,
-        projects,
-        addProject,
-        updateProject,
-        processCallOutcome,
+        advanceStage,
+        setStage,
         activities,
-        addActivity,
         getLeadActivities,
-        followUps,
-        completeFollowUp,
-        overdueFollowUps,
-        todayFollowUps,
-        upcomingFollowUps,
+        addActivity,
+        logCall,
         clients,
-        searchModalOpen,
-        setSearchModalOpen,
-        quickAddOpen,
-        setQuickAddOpen,
-        importModalOpen,
-        setImportModalOpen,
-        importLeads,
-        toastMessage,
-        showToast,
-        refreshSync
+        updateClient,
+        teamMembers,
+        addTeamMember,
+        removeTeamMember,
+        toast,
+        showToast
       }}
     >
       {children}
