@@ -67,6 +67,10 @@ interface CRMContextType {
   // Team Members
   teamMembers: string[];
   addTeamMember: (name: string, username: string, password: string, role: UserRole) => Promise<void>;
+  updateUserAccount: (
+    id: string,
+    updates: { name?: string; username?: string; password?: string; role?: UserRole }
+  ) => Promise<void>;
   removeTeamMember: (idOrName: string) => Promise<void>;
 
   // Toast
@@ -489,6 +493,55 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const updateUserAccount = async (
+    id: string,
+    updates: { name?: string; username?: string; password?: string; role?: UserRole }
+  ) => {
+    let updatedUser: UserAccount | undefined;
+
+    setUsersList((prev) => {
+      const updated = prev.map((u) => {
+        if (u.id === id || u.name === id) {
+          updatedUser = {
+            ...u,
+            name: updates.name !== undefined ? updates.name.trim() : u.name,
+            username: updates.username !== undefined ? updates.username.trim().toLowerCase() : u.username,
+            password: updates.password !== undefined ? updates.password.trim() : u.password,
+            role: updates.role !== undefined ? updates.role : u.role
+          };
+          return updatedUser;
+        }
+        return u;
+      });
+      localStorage.setItem(STORAGE_KEYS.USERS_LIST, JSON.stringify(updated));
+      return updated;
+    });
+
+    if (updatedUser) {
+      const targetUser = updatedUser;
+      if (currentUser && (currentUser.id === id || currentUser.name === id)) {
+        setCurrentUser(targetUser);
+        localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(targetUser));
+      }
+
+      showToast(`Updated credentials for ${targetUser.name}`);
+
+      executeCloud(async () => {
+        await supabase.from('users').upsert({
+          id: targetUser.id,
+          name: targetUser.name,
+          role: targetUser.role === 'admin' ? 'founder' : 'outreach',
+          avatar_url: JSON.stringify({
+            username: targetUser.username,
+            password: targetUser.password,
+            role: targetUser.role
+          })
+        });
+        await refreshFromCloud();
+      });
+    }
+  };
+
   // --- Lead CRUD ---
   const addLead = (data: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Lead => {
     const now = new Date().toISOString();
@@ -735,6 +788,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         updateClient,
         teamMembers,
         addTeamMember,
+        updateUserAccount,
         removeTeamMember,
         toast,
         showToast

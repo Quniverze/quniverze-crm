@@ -106,11 +106,11 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           )}
 
-          {/* Team Roster Button */}
+          {/* Team Button */}
           <button
             onClick={() => setTeamModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-[#12151C]/80 hover:text-[#12151C] border border-[#E5E7EB] hover:border-[#12151C] bg-white transition-colors"
-            title="Manage Team Roster & Credentials"
+            title="Team"
           >
             <UserCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
             <span className="hidden sm:inline">Team</span>

@@ -13,8 +13,8 @@
   --color-border: #E5E7EB;
   --color-accent: #3B82F6;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
@@ -31,8 +31,8 @@
   --border: #E5E7EB;
   --accent: #3B82F6;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer base {
@@ -47,6 +47,7 @@
     font-family: var(--font-sans);
     font-size: 13px;
     line-height: 1.5;
+    letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -54,6 +55,10 @@
 
   button {
     cursor: pointer;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.022em;
   }
 }
 
@@ -91,8 +96,8 @@
 /* Typography Scale */
 .page-title {
   font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
   color: var(--text-primary);
   line-height: 1.25;
 }
@@ -101,13 +106,13 @@
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
 }
 
 .big-metric {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: var(--text-primary);
@@ -117,7 +122,7 @@
 .lead-name {
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: var(--text-primary);
 }
 
