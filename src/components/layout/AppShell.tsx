@@ -12,8 +12,7 @@ import {
   Search,
   Plus,
   UserCheck,
-  LogOut,
-  Shield
+  LogOut
 } from 'lucide-react';
 
 interface AppShellProps {
@@ -41,26 +40,25 @@ export function AppShell({ children }: AppShellProps) {
     { view: 'clients', label: 'Clients', icon: Briefcase }
   ];
 
-  const isAdmin = currentUser?.role === 'admin';
-
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C] font-sans">
-      {/* Top Header */}
-      <header className="h-14 bg-white border-b border-[#E5E7EB] px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
-        {/* Left: Brand Wordmark & Nav */}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C] font-sans antialiased">
+      {/* Top Navigation Bar */}
+      <header className="h-[52px] bg-white border-b border-[#E5E7EB] px-4 md:px-6 flex items-center justify-between shrink-0 z-30 select-none">
+        {/* Left: Wordmark & Navigation */}
         <div className="flex items-center gap-6">
-          <div
+          <button
             onClick={() => setCurrentView('today')}
-            className="cursor-pointer select-none flex items-baseline"
+            className="flex items-baseline focus:outline-none group"
+            title="Quniverze Lead Management"
           >
-            <span className="text-[17px] font-bold tracking-tight text-[#12151C]">
+            <span className="text-[16px] font-bold tracking-tight text-[#12151C]">
               Quniverze
             </span>
-            <span className="text-[17px] font-bold text-[#3B82F6]">.</span>
-          </div>
+            <span className="text-[16px] font-bold text-[#3B82F6] ml-0.5">.</span>
+          </button>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Desktop Navigation Tabs */}
+          <nav className="hidden md:flex items-center gap-0.5">
             {navItems.map((item) => {
               const isActive = currentView === item.view;
               const Icon = item.icon;
@@ -70,11 +68,11 @@ export function AppShell({ children }: AppShellProps) {
                   onClick={() => setCurrentView(item.view)}
                   className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors flex items-center gap-1.5 ${
                     isActive
-                      ? 'text-[#12151C] border-b-2 border-[#3B82F6]'
-                      : 'text-[#12151C]/60 hover:text-[#12151C]'
+                      ? 'bg-[#12151C] text-white'
+                      : 'text-[#12151C]/70 hover:text-[#12151C] hover:bg-[#F4F6F9]'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="w-3.5 h-3.5 opacity-80" />
                   <span>{item.label}</span>
                 </button>
               );
@@ -82,58 +80,59 @@ export function AppShell({ children }: AppShellProps) {
           </nav>
         </div>
 
-        {/* Right: User Badge, Search, Team, + Add Lead, Logout */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* User Profile Badge */}
+        {/* Right: Search, User, Team, Primary Action, Logout */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Global Search Button */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 px-2.5 py-1 text-[12px] text-[#12151C]/60 hover:text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C]/30 transition-colors"
+            title="Search leads, contacts, phones (⌘K)"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Search</span>
+            <kbd className="hidden sm:inline text-[9.5px] font-mono text-[#12151C]/50 px-1 border border-[#E5E7EB] bg-white">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* User Badge */}
           {currentUser && (
-            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-[#F4F6F9] border border-[#E5E7EB] text-[11.5px] font-mono">
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-mono text-[#12151C] border border-[#E5E7EB] bg-white">
               <span className="w-1.5 h-1.5 bg-[#3B82F6] rounded-full"></span>
-              <span className="font-semibold text-[#12151C]">{currentUser.name}</span>
-              <span className="text-[#12151C]/50 uppercase text-[9.5px]">
+              <span className="font-semibold">{currentUser.name}</span>
+              <span className="text-[#12151C]/40 uppercase text-[9.5px]">
                 ({currentUser.role})
               </span>
             </div>
           )}
 
-          {/* Search Trigger */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 px-2.5 py-1 text-[12px] text-[#12151C]/60 hover:text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C]/40 transition-colors"
-            title="Search (⌘K)"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Search</span>
-            <kbd className="hidden sm:inline text-[10px] font-mono text-[#12151C]/40 px-1 border border-[#E5E7EB]">
-              ⌘K
-            </kbd>
-          </button>
-
-          {/* Team Roster Trigger */}
+          {/* Team Roster Button */}
           <button
             onClick={() => setTeamModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-[#12151C]/80 hover:text-[#12151C] border border-[#E5E7EB] hover:border-[#12151C] bg-white transition-colors"
-            title="Team & Credentials"
+            title="Manage Team Roster & Credentials"
           >
             <UserCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
             <span className="hidden sm:inline">Team</span>
-            <span className="font-mono text-[11px] text-[#12151C]/60">
+            <span className="font-mono text-[11px] text-[#12151C]/50">
               ({teamMembers.length})
             </span>
           </button>
 
-          {/* Add Lead Primary CTA */}
+          {/* Primary Action Button: + Lead */}
           <button
             onClick={() => setQuickAddOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#12151C] hover:bg-[#3B82F6] text-white text-[12px] font-medium transition-colors"
+            title="Add Lead"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Lead</span>
           </button>
 
-          {/* Logout */}
+          {/* Sign Out */}
           <button
             onClick={logout}
-            className="p-1.5 text-[#12151C]/50 hover:text-[#12151C] hover:bg-[#F4F6F9] border border-transparent hover:border-[#E5E7EB] transition-colors"
+            className="p-1.5 text-[#12151C]/40 hover:text-[#12151C] hover:bg-[#F4F6F9] transition-colors"
             title="Sign out"
           >
             <LogOut className="w-3.5 h-3.5" />
@@ -141,13 +140,13 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content View */}
       <main className="flex-1 flex overflow-hidden relative">
         {children}
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden h-14 bg-white border-t border-[#E5E7EB] flex items-center justify-around px-2 shrink-0 z-20">
+      <nav className="md:hidden h-[54px] bg-white border-t border-[#E5E7EB] flex items-center justify-around px-2 shrink-0 z-30 select-none">
         {navItems.map((item) => {
           const isActive = currentView === item.view;
           const Icon = item.icon;
@@ -168,10 +167,10 @@ export function AppShell({ children }: AppShellProps) {
         })}
       </nav>
 
-      {/* Toast Notification */}
+      {/* Crisp Toast Notification */}
       {toast && (
-        <div className="fixed bottom-16 md:bottom-6 right-4 z-50 px-4 py-2 bg-[#12151C] text-white text-[12px] font-mono shadow-lg border border-[#3B82F6]/40 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-[#3B82F6]"></span>
+        <div className="fixed bottom-16 md:bottom-6 right-4 z-50 px-4 py-2.5 bg-[#12151C] text-white text-[12px] font-mono shadow-xl border border-[#3B82F6]/50 flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <span className="w-1.5 h-1.5 bg-[#3B82F6] shrink-0"></span>
           <span>{toast}</span>
         </div>
       )}

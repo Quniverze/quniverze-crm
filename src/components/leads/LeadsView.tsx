@@ -16,8 +16,32 @@ import {
   ArrowRight,
   Trash2,
   Send,
-  Edit2
+  Edit2,
+  Check,
+  Clock,
+  AlertTriangle,
+  Copy
 } from 'lucide-react';
+
+function getDueStatus(dueDate?: string) {
+  if (!dueDate) return { label: 'No due date', type: 'none' };
+  const today = new Date().toISOString().split('T')[0];
+  if (dueDate < today) {
+    const diffDays = Math.max(
+      1,
+      Math.ceil((new Date(today).getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24))
+    );
+    return { label: `Overdue (${diffDays}d)`, type: 'overdue' };
+  }
+  if (dueDate === today) return { label: 'Due Today', type: 'today' };
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  if (dueDate === tomorrowStr) return { label: 'Due Tomorrow', type: 'tomorrow' };
+
+  return { label: `Due ${dueDate}`, type: 'future' };
+}
 
 export function LeadsView() {
   const {
@@ -30,7 +54,8 @@ export function LeadsView() {
     deleteLead,
     getLeadActivities,
     addActivity,
-    teamMembers
+    teamMembers,
+    showToast
   } = useCRM();
 
   // Filters & Search
@@ -38,6 +63,7 @@ export function LeadsView() {
   const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
   const [stageFilter, setStageFilter] = useState<'All' | LeadStage>('All');
   const [assignedFilter, setAssignedFilter] = useState<'All' | string>('All');
+  const [attentionFilter, setAttentionFilter] = useState<'All' | 'Overdue' | 'MissingAction'>('All');
 
   // Inline note text
   const [noteText, setNoteText] = useState('');
@@ -47,12 +73,25 @@ export function LeadsView() {
   const [nextActionInput, setNextActionInput] = useState('');
   const [nextActionDueInput, setNextActionDueInput] = useState('');
 
+  // Editing lead details inline
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editValue, setEditValue] = useState<number | undefined>(undefined);
+  const [editAngle, setEditAngle] = useState('');
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
   // Filtered Leads
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       if (typeFilter !== 'All' && lead.type !== typeFilter) return false;
       if (stageFilter !== 'All' && lead.stage !== stageFilter) return false;
       if (assignedFilter !== 'All' && lead.assigned_to !== assignedFilter) return false;
+
+      if (attentionFilter === 'Overdue') {
+        if (!lead.next_action_due || lead.next_action_due >= todayStr) return false;
+      } else if (attentionFilter === 'MissingAction') {
+        if (lead.next_action && lead.next_action_due) return false;
+      }
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -66,7 +105,7 @@ export function LeadsView() {
       }
       return true;
     });
-  }, [leads, typeFilter, stageFilter, assignedFilter, searchQuery]);
+  }, [leads, typeFilter, stageFilter, assignedFilter, attentionFilter, searchQuery, todayStr]);
 
   const activeLead = leads.find((l) => l.id === selectedLeadId);
   const activeActivities = activeLead ? getLeadActivities(activeLead.id) : [];
@@ -74,6 +113,7 @@ export function LeadsView() {
   const handleSelectLead = (lead: Lead) => {
     setSelectedLeadId(lead.id);
     setEditingNextAction(false);
+    setEditingDetails(false);
   };
 
   const handleStartEditNextAction = () => {
@@ -97,6 +137,22 @@ export function LeadsView() {
     setEditingNextAction(false);
   };
 
+  const handleStartEditDetails = () => {
+    if (!activeLead) return;
+    setEditValue(activeLead.value);
+    setEditAngle(activeLead.angle || '');
+    setEditingDetails(true);
+  };
+
+  const handleSaveDetails = () => {
+    if (!activeLead) return;
+    updateLead(activeLead.id, {
+      value: editValue,
+      angle: editAngle.trim()
+    });
+    setEditingDetails(false);
+  };
+
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeLead || !noteText.trim()) return;
@@ -104,9 +160,16 @@ export function LeadsView() {
     setNoteText('');
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    showToast(`Copied ${label} to clipboard`);
+  };
+
   return (
     <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-[#F4F6F9]">
-      {/* Left / Main: Table of Leads */}
+      {/* ========================================================
+          Left / Main: High-Density Table of Leads
+          ======================================================== */}
       <div className="flex-1 flex flex-col h-full overflow-hidden border-r border-[#E5E7EB]">
         {/* Filter & Control Bar */}
         <div className="p-4 bg-white border-b border-[#E5E7EB] space-y-3 shrink-0">
@@ -117,7 +180,7 @@ export function LeadsView() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search business, contact, phone, city..."
+                placeholder="Search business, contact person, phone, city..."
                 className="w-full pl-9 pr-3 py-1.5 text-[13px] bg-[#F4F6F9] border border-[#E5E7EB] focus:outline-none focus:border-[#3B82F6] text-[#12151C]"
               />
             </div>
@@ -130,9 +193,9 @@ export function LeadsView() {
             </button>
           </div>
 
-          {/* Filters */}
+          {/* Filters Row */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-[12px]">
-            {/* Type filter */}
+            {/* Line of Business */}
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
@@ -143,7 +206,7 @@ export function LeadsView() {
               <option value="Client Work">Client Work</option>
             </select>
 
-            {/* Stage filter */}
+            {/* Stage */}
             <select
               value={stageFilter}
               onChange={(e) => setStageFilter(e.target.value as any)}
@@ -157,7 +220,7 @@ export function LeadsView() {
               ))}
             </select>
 
-            {/* Assigned filter */}
+            {/* Assigned Member */}
             <select
               value={assignedFilter}
               onChange={(e) => setAssignedFilter(e.target.value)}
@@ -171,13 +234,32 @@ export function LeadsView() {
               ))}
             </select>
 
+            {/* Attention Filter */}
+            <select
+              value={attentionFilter}
+              onChange={(e) => setAttentionFilter(e.target.value as any)}
+              className="px-2.5 py-1 bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] focus:outline-none"
+            >
+              <option value="All">All Health</option>
+              <option value="Overdue">Overdue Actions Only</option>
+              <option value="MissingAction">Missing Next Step</option>
+            </select>
+
             <span className="ml-auto text-[11px] font-mono text-[#12151C]/60 shrink-0">
-              {filteredLeads.length} leads
+              {filteredLeads.length} {filteredLeads.length === 1 ? 'lead' : 'leads'}
             </span>
           </div>
         </div>
 
-        {/* Lead Table / List */}
+        {/* Lead Table Header (Desktop) */}
+        <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-[#F4F6F9] border-b border-[#E5E7EB] text-[10.5px] font-mono uppercase tracking-wider text-[#12151C]/60 shrink-0">
+          <div className="col-span-4">Lead / Contact</div>
+          <div className="col-span-2">Line &amp; Stage</div>
+          <div className="col-span-4">What Should Happen Next?</div>
+          <div className="col-span-2 text-right">Value / Owner</div>
+        </div>
+
+        {/* Lead Table / List Body */}
         <div className="flex-1 overflow-y-auto">
           {filteredLeads.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white">
@@ -203,6 +285,8 @@ export function LeadsView() {
             <div className="divide-y divide-[#E5E7EB] bg-white">
               {filteredLeads.map((lead) => {
                 const isSelected = lead.id === selectedLeadId;
+                const dueStatus = getDueStatus(lead.next_action_due);
+
                 return (
                   <div
                     key={lead.id}
@@ -211,55 +295,120 @@ export function LeadsView() {
                       isSelected ? 'bg-[#F4F6F9] border-l-2 border-l-[#12151C]' : ''
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
-                            {lead.type}
-                          </span>
-                          <span className="text-[10px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]/80">
-                            {lead.stage}
-                          </span>
+                    {/* Desktop Tabular Grid Layout */}
+                    <div className="hidden lg:grid grid-cols-12 gap-3 items-center">
+                      {/* Business & Contact */}
+                      <div className="col-span-4 min-w-0 pr-2">
+                        <div className="flex items-center gap-2">
                           <h4 className="text-[13.5px] font-bold text-[#12151C] truncate">
                             {lead.business_name}
                           </h4>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-[12px] text-[#12151C]/70 mt-1 flex-wrap">
-                          <span>{lead.contact_name}</span>
-                          <span>•</span>
-                          <span className="font-mono">{lead.phone}</span>
                           {lead.city && (
-                            <>
-                              <span>•</span>
-                              <span>{lead.city}</span>
-                            </>
+                            <span className="text-[11px] font-mono text-[#12151C]/50 truncate">
+                              • {lead.city}
+                            </span>
                           )}
                         </div>
+                        <div className="text-[12px] text-[#12151C]/70 truncate flex items-center gap-2 mt-0.5">
+                          <span>{lead.contact_name}</span>
+                          <span className="font-mono text-[#12151C]/50">{lead.phone}</span>
+                        </div>
+                      </div>
 
-                        {lead.next_action && (
-                          <div className="text-[11.5px] text-[#12151C] font-medium mt-1.5 flex items-center gap-1.5">
-                            <span className="text-[#3B82F6]">→</span>
-                            <span className="truncate">{lead.next_action}</span>
-                            {lead.next_action_due && (
-                              <span className="text-[10px] font-mono text-[#12151C]/60 shrink-0">
-                                ({lead.next_action_due})
+                      {/* Line & Stage */}
+                      <div className="col-span-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
+                          {lead.type === 'Product' ? 'Product' : 'Client'}
+                        </span>
+                        <span className="text-[10px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]/80">
+                          {lead.stage}
+                        </span>
+                      </div>
+
+                      {/* Next Action + Due Status */}
+                      <div className="col-span-4 min-w-0 pr-2">
+                        {lead.next_action ? (
+                          <div>
+                            <div className="text-[12.5px] text-[#12151C] font-medium truncate flex items-center gap-1.5">
+                              <span className="text-[#3B82F6]">→</span>
+                              <span className="truncate">{lead.next_action}</span>
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2">
+                              <span
+                                className={`text-[10px] font-mono uppercase font-bold px-1.5 py-0.2 ${
+                                  dueStatus.type === 'overdue'
+                                    ? 'bg-[#12151C] text-white'
+                                    : dueStatus.type === 'today'
+                                    ? 'bg-[#E5E7EB] text-[#12151C]'
+                                    : 'text-[#12151C]/60'
+                                }`}
+                              >
+                                {dueStatus.label}
                               </span>
-                            )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] font-mono text-[#12151C]/40 italic flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-[#12151C]/50" />
+                            <span>No next action scheduled</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="text-[11px] font-mono text-[#12151C]/60 block">
+                      {/* Value / Owner */}
+                      <div className="col-span-2 text-right">
+                        <span className="text-[12px] font-mono font-bold text-[#12151C] block">
+                          {lead.value ? `₹${lead.value.toLocaleString()}` : '—'}
+                        </span>
+                        <span className="text-[11px] font-mono text-[#12151C]/60 block mt-0.5">
                           {lead.assigned_to}
                         </span>
-                        {lead.value ? (
-                          <span className="text-[11.5px] font-mono font-semibold text-[#12151C] block mt-0.5">
-                            ₹{lead.value.toLocaleString()}
-                          </span>
-                        ) : null}
                       </div>
+                    </div>
+
+                    {/* Mobile / Responsive Card Layout */}
+                    <div className="lg:hidden space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1 py-0.5 text-[#12151C]">
+                              {lead.type}
+                            </span>
+                            <span className="text-[9.5px] font-mono uppercase border border-[#E5E7EB] px-1 py-0.5 text-[#12151C]/80">
+                              {lead.stage}
+                            </span>
+                            <h4 className="text-[13.5px] font-bold text-[#12151C]">
+                              {lead.business_name}
+                            </h4>
+                          </div>
+                          <div className="text-[12px] text-[#12151C]/70 mt-0.5">
+                            {lead.contact_name} • <span className="font-mono">{lead.phone}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          {lead.value && (
+                            <span className="text-[12px] font-mono font-bold text-[#12151C] block">
+                              ₹{lead.value.toLocaleString()}
+                            </span>
+                          )}
+                          <span className="text-[10.5px] font-mono text-[#12151C]/60 block">
+                            {lead.assigned_to}
+                          </span>
+                        </div>
+                      </div>
+
+                      {lead.next_action && (
+                        <div className="text-[12px] text-[#12151C] font-medium pt-1.5 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                          <div className="truncate flex items-center gap-1">
+                            <span className="text-[#3B82F6]">→</span>
+                            <span className="truncate">{lead.next_action}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-[#12151C]/60 shrink-0">
+                            {lead.next_action_due}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -269,9 +418,11 @@ export function LeadsView() {
         </div>
       </div>
 
-      {/* Right / Detail Pane: Active Lead Info & Inline Activity */}
+      {/* ========================================================
+          Right / Detail Pane: Active Lead Info & Inline Activity
+          ======================================================== */}
       {activeLead ? (
-        <div className="w-full md:w-[420px] lg:w-[480px] bg-white flex flex-col h-full overflow-y-auto shrink-0 border-l border-[#E5E7EB]">
+        <div className="w-full md:w-[440px] lg:w-[480px] bg-white flex flex-col h-full overflow-y-auto shrink-0 border-l border-[#E5E7EB]">
           {/* Header */}
           <div className="p-4 border-b border-[#E5E7EB] flex items-center justify-between bg-[#F4F6F9]/60 shrink-0">
             <div className="min-w-0">
@@ -299,7 +450,10 @@ export function LeadsView() {
             {/* 1. DOMINANT NEXT ACTION PINNED AT TOP */}
             <div className="p-3.5 bg-[#F4F6F9] border-2 border-[#12151C]">
               <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#12151C] font-bold mb-1">
-                <span>Next Action</span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-3 h-3 text-[#3B82F6]" />
+                  <span>What Should Happen Next?</span>
+                </span>
                 <button
                   onClick={handleStartEditNextAction}
                   className="text-[10px] text-[#3B82F6] hover:underline flex items-center gap-1"
@@ -315,7 +469,7 @@ export function LeadsView() {
                     type="text"
                     value={nextActionInput}
                     onChange={(e) => setNextActionInput(e.target.value)}
-                    placeholder="Action description..."
+                    placeholder="Action description (e.g. Call for onboarding demo)..."
                     className="w-full px-2.5 py-1 text-[12px] bg-white border border-[#E5E7EB] focus:outline-none"
                   />
                   <div className="flex items-center gap-2">
@@ -341,23 +495,31 @@ export function LeadsView() {
                 </div>
               ) : (
                 <div>
-                  <div className="text-[13px] font-semibold text-[#12151C] flex items-center gap-1.5">
+                  <div className="text-[13px] font-semibold text-[#12151C] flex items-center gap-1.5 mt-1">
                     <span className="text-[#3B82F6]">→</span>
-                    <span>{activeLead.next_action || 'No action scheduled'}</span>
+                    <span>{activeLead.next_action || 'No action scheduled — click edit'}</span>
                   </div>
-                  {activeLead.next_action_due && (
-                    <div className="text-[11px] font-mono text-[#12151C]/70 mt-1">
-                      Due: {activeLead.next_action_due}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`text-[10.5px] font-mono uppercase font-bold px-1.5 py-0.5 ${
+                        getDueStatus(activeLead.next_action_due).type === 'overdue'
+                          ? 'bg-[#12151C] text-white'
+                          : getDueStatus(activeLead.next_action_due).type === 'today'
+                          ? 'bg-[#E5E7EB] text-[#12151C]'
+                          : 'text-[#12151C]/70'
+                      }`}
+                    >
+                      {getDueStatus(activeLead.next_action_due).label}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 2. Contact Actions (Call / WhatsApp) */}
+            {/* 2. Rapid Contact Actions (Call / WhatsApp) */}
             <div className="space-y-2">
               <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
-                Contact &amp; Fast Actions
+                Direct Contact
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <a
@@ -377,41 +539,105 @@ export function LeadsView() {
                   <span>WhatsApp</span>
                 </a>
               </div>
-              <div className="text-[12px] text-[#12151C]/80 mt-1">
-                <span className="font-semibold">{activeLead.contact_name}</span>
-                {activeLead.city && <span> • {activeLead.city}</span>}
+              <div className="flex items-center justify-between text-[12px] text-[#12151C]/80 pt-1">
+                <span>
+                  <strong>{activeLead.contact_name}</strong>
+                  {activeLead.city && <span> • {activeLead.city}</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(activeLead.phone, 'phone')}
+                  className="text-[11px] font-mono text-[#3B82F6] hover:underline flex items-center gap-1"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Copy</span>
+                </button>
               </div>
             </div>
 
-            {/* 3. Stage Selector */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
-                Pipeline Stage
-              </label>
-              <select
-                value={activeLead.stage}
-                onChange={(e) => setStage(activeLead.id, e.target.value as LeadStage)}
-                className="w-full px-3 py-2 text-[12.5px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] focus:outline-none"
-              >
-                {PIPELINE_STAGES.map((stg) => (
-                  <option key={stg} value={stg}>
-                    {stg}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* 3. Stage & Value */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
+                  Pipeline Stage
+                </label>
+                <select
+                  value={activeLead.stage}
+                  onChange={(e) => setStage(activeLead.id, e.target.value as LeadStage)}
+                  className="w-full px-2.5 py-1.5 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] focus:outline-none"
+                >
+                  {PIPELINE_STAGES.map((stg) => (
+                    <option key={stg} value={stg}>
+                      {stg}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* 4. Angle (Pitch / Reason to Pursue) */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
-                Strategic Angle / Pitch
-              </label>
-              <div className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] text-[12.5px] text-[#12151C]">
-                {activeLead.angle || 'No angle specified. Edit lead to add pitch notes.'}
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
+                  Est. Deal Value (₹)
+                </label>
+                <input
+                  type="number"
+                  value={activeLead.value || ''}
+                  onChange={(e) =>
+                    updateLead(activeLead.id, {
+                      value: e.target.value ? Number(e.target.value) : undefined
+                    })
+                  }
+                  placeholder="e.g. 50000"
+                  className="w-full px-2.5 py-1.5 text-[12px] font-mono bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] focus:outline-none"
+                />
               </div>
             </div>
 
-            {/* 5. Inline Activity Log (calls, notes, stage changes) */}
+            {/* 4. Strategic Angle / Pitch */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
+                <span>Strategic Angle / Pitch</span>
+                {!editingDetails ? (
+                  <button
+                    onClick={handleStartEditDetails}
+                    className="text-[10px] text-[#3B82F6] hover:underline"
+                  >
+                    Edit
+                  </button>
+                ) : null}
+              </div>
+
+              {editingDetails ? (
+                <div className="space-y-2">
+                  <textarea
+                    rows={2}
+                    value={editAngle}
+                    onChange={(e) => setEditAngle(e.target.value)}
+                    placeholder="Specific pitch angle or operational pain point..."
+                    className="w-full p-2.5 text-[12px] bg-white border border-[#E5E7EB] text-[#12151C] focus:outline-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveDetails}
+                      className="px-3 py-1 bg-[#12151C] text-white text-[11px] font-medium hover:bg-[#3B82F6]"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingDetails(false)}
+                      className="px-2 py-1 text-[11px] text-[#12151C]/60 hover:text-[#12151C]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] text-[12.5px] text-[#12151C] italic">
+                  {activeLead.angle || 'No angle specified. Click edit to add pitch rationale.'}
+                </div>
+              )}
+            </div>
+
+            {/* 5. Inline Activity Timeline */}
             <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
               <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60 block">
                 Activity History ({activeActivities.length})
@@ -423,7 +649,7 @@ export function LeadsView() {
                   type="text"
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
-                  placeholder="Log quick call note or observation..."
+                  placeholder="Log quick observation or call summary..."
                   className="flex-1 px-3 py-1.5 text-[12px] bg-[#F4F6F9] border border-[#E5E7EB] focus:outline-none text-[#12151C]"
                 />
                 <button
@@ -436,7 +662,7 @@ export function LeadsView() {
               </form>
 
               {/* Activity Timeline List */}
-              <div className="space-y-2 mt-2">
+              <div className="space-y-2 mt-2 max-h-60 overflow-y-auto pr-1">
                 {activeActivities.length === 0 ? (
                   <div className="text-[11.5px] text-[#12151C]/50 italic">
                     No activity recorded yet.
@@ -451,7 +677,12 @@ export function LeadsView() {
                         <span className="uppercase font-semibold text-[#12151C]">
                           {act.type.replace('_', ' ')}
                         </span>
-                        <span>{new Date(act.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                        <span>
+                          {new Date(act.created_at).toLocaleString([], {
+                            dateStyle: 'short',
+                            timeStyle: 'short'
+                          })}
+                        </span>
                       </div>
                       <div className="text-[#12151C]">{act.text}</div>
                     </div>

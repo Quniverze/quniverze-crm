@@ -10,11 +10,23 @@ import {
   CheckCircle2,
   X,
   ArrowRight,
-  MessageSquare
+  MessageSquare,
+  AlertTriangle,
+  ChevronRight,
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 
 export function FollowUpsView() {
-  const { leads, logCall, setSelectedLeadId, setCurrentView, currentUser } = useCRM();
+  const {
+    leads,
+    logCall,
+    setSelectedLeadId,
+    setCurrentView,
+    currentUser,
+    updateLead
+  } = useCRM();
+
   const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
   const [scope, setScope] = useState<'my' | 'all'>(
     currentUser?.role === 'member' ? 'my' : 'all'
@@ -26,7 +38,6 @@ export function FollowUpsView() {
   const [callNotes, setCallNotes] = useState('');
   const [nextActionText, setNextActionText] = useState('Follow up call');
   const [nextActionDate, setNextActionDate] = useState(() => {
-    // Tomorrow by default
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
@@ -34,43 +45,51 @@ export function FollowUpsView() {
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Filter leads that have an action, are not Won/Lost, and match scope
-  const actionableLeads = useMemo(() => {
+  // Filter leads that are not Won/Lost, and match scope
+  const activeLeads = useMemo(() => {
     return leads.filter((l) => {
       if (l.stage === 'Won' || l.stage === 'Lost') return false;
       if (typeFilter !== 'All' && l.type !== typeFilter) return false;
       if (scope === 'my' && currentUser) {
         if (l.assigned_to.toLowerCase() !== currentUser.name.toLowerCase()) return false;
       }
-      return Boolean(l.next_action || l.next_action_due);
+      return true;
     });
   }, [leads, typeFilter, scope, currentUser]);
 
-  // Overdue: next_action_due < today
+  // 1. Overdue: next_action_due < today
   const overdueLeads = useMemo(() => {
-    return actionableLeads.filter((l) => l.next_action_due && l.next_action_due < todayStr);
-  }, [actionableLeads, todayStr]);
+    return activeLeads.filter((l) => l.next_action_due && l.next_action_due < todayStr);
+  }, [activeLeads, todayStr]);
 
-  // Due Today: next_action_due === today
+  // 2. Due Today: next_action_due === today
   const dueTodayLeads = useMemo(() => {
-    return actionableLeads.filter((l) => l.next_action_due === todayStr);
-  }, [actionableLeads, todayStr]);
+    return activeLeads.filter((l) => l.next_action_due === todayStr);
+  }, [activeLeads, todayStr]);
 
-  // Upcoming: next_action_due > today or no due date
+  // 3. Missing Action: no next action or due date
+  const missingActionLeads = useMemo(() => {
+    return activeLeads.filter(
+      (l) => !l.next_action || !l.next_action.trim() || !l.next_action_due
+    );
+  }, [activeLeads]);
+
+  // 4. Upcoming: next_action_due > today
   const upcomingLeads = useMemo(() => {
-    return actionableLeads.filter((l) => !l.next_action_due || l.next_action_due > todayStr);
-  }, [actionableLeads, todayStr]);
+    return activeLeads.filter((l) => l.next_action_due && l.next_action_due > todayStr);
+  }, [activeLeads, todayStr]);
 
-  const allQueueList = useMemo(() => {
-    return [...overdueLeads, ...dueTodayLeads, ...upcomingLeads];
-  }, [overdueLeads, dueTodayLeads, upcomingLeads]);
+  // Ordered queue for sequential dialing
+  const fullDialQueue = useMemo(() => {
+    return [...overdueLeads, ...dueTodayLeads, ...missingActionLeads, ...upcomingLeads];
+  }, [overdueLeads, dueTodayLeads, missingActionLeads, upcomingLeads]);
 
   // Open call logger
   const handleStartCall = (lead: Lead) => {
     setCallingLead(lead);
     setOutcome('Interested');
     setCallNotes('');
-    setNextActionText(lead.next_action || 'Follow up with client');
+    setNextActionText(lead.next_action || 'Follow up with contact');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setNextActionDate(tomorrow.toISOString().split('T')[0]);
@@ -90,9 +109,9 @@ export function FollowUpsView() {
     );
 
     if (advanceToNext) {
-      const currentIndex = allQueueList.findIndex((l) => l.id === currentLeadId);
-      if (currentIndex >= 0 && currentIndex < allQueueList.length - 1) {
-        handleStartCall(allQueueList[currentIndex + 1]);
+      const currentIndex = fullDialQueue.findIndex((l) => l.id === currentLeadId);
+      if (currentIndex >= 0 && currentIndex < fullDialQueue.length - 1) {
+        handleStartCall(fullDialQueue[currentIndex + 1]);
         return;
       }
     }
@@ -117,17 +136,17 @@ export function FollowUpsView() {
             </span>
             <span className="text-[#E5E7EB]">/</span>
             <h1 className="text-[20px] font-bold text-[#12151C] tracking-tight">
-              Follow-ups Queue
+              Action Queue
             </h1>
           </div>
           <p className="text-[13px] text-[#12151C]/60 mt-0.5">
-            Overdue, today, and upcoming scheduled sales touchpoints.
+            Rapid touchpoint execution: overdue items, today&apos;s calls, and unassigned steps.
           </p>
         </div>
 
         {/* Filters Group: Scope + Type */}
         <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
-          {/* My Leads vs All Team Toggle */}
+          {/* Scope Toggle */}
           <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
             <button
               onClick={() => setScope('my')}
@@ -171,7 +190,7 @@ export function FollowUpsView() {
       </div>
 
       {/* Main Queues */}
-      {allQueueList.length === 0 ? (
+      {fullDialQueue.length === 0 ? (
         <div className="p-12 text-center bg-white border border-[#E5E7EB]">
           <CheckCircle2 className="w-10 h-10 text-[#12151C]/30 mx-auto mb-3" />
           <h3 className="text-[15px] font-semibold text-[#12151C]">Queue is clear</h3>
@@ -189,7 +208,7 @@ export function FollowUpsView() {
                   Overdue
                 </span>
                 <span className="text-[12px] font-mono text-[#12151C]/60">
-                  ({overdueLeads.length} touchpoints)
+                  ({overdueLeads.length} touchpoints needing immediate intervention)
                 </span>
               </div>
 
@@ -207,7 +226,7 @@ export function FollowUpsView() {
                         <span className="text-[10px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
                           {lead.stage}
                         </span>
-                        <h3 className="text-[14px] font-bold text-[#12151C]">
+                        <h3 className="text-[14.5px] font-bold text-[#12151C]">
                           {lead.business_name}
                         </h3>
                         <span className="text-[12px] text-[#12151C]/70">
@@ -220,20 +239,37 @@ export function FollowUpsView() {
                         <span>{lead.next_action}</span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-[11px] text-[#12151C]/60 font-mono mt-1">
-                        <span className="text-[#12151C] font-bold">Was due: {lead.next_action_due}</span>
+                      <div className="flex items-center gap-3 text-[11px] text-[#12151C]/60 font-mono mt-1 flex-wrap">
+                        <span className="text-[#12151C] font-bold">
+                          Missed Date: {lead.next_action_due}
+                        </span>
                         <span>•</span>
-                        <span>Assigned: {lead.assigned_to}</span>
+                        <span>Owner: {lead.assigned_to}</span>
                         {lead.city && (
                           <>
                             <span>•</span>
                             <span>{lead.city}</span>
                           </>
                         )}
+                        {lead.angle && (
+                          <>
+                            <span>•</span>
+                            <span className="italic text-[#12151C]/80">Angle: {lead.angle}</span>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                      <a
+                        href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C]"
+                        title="Open WhatsApp"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </a>
                       <button
                         onClick={() => handleStartCall(lead)}
                         className="px-4 py-2 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors flex items-center gap-1.5"
@@ -256,7 +292,7 @@ export function FollowUpsView() {
                   Due Today
                 </span>
                 <span className="text-[12px] font-mono text-[#12151C]/60">
-                  ({dueTodayLeads.length})
+                  ({dueTodayLeads.length} touchpoints)
                 </span>
               </div>
 
@@ -270,6 +306,9 @@ export function FollowUpsView() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
                           {lead.type}
+                        </span>
+                        <span className="text-[10px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
+                          {lead.stage}
                         </span>
                         <h3 className="text-[14px] font-bold text-[#12151C]">
                           {lead.business_name}
@@ -290,6 +329,15 @@ export function FollowUpsView() {
                     </div>
 
                     <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                      <a
+                        href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C]"
+                        title="Open WhatsApp"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </a>
                       <button
                         onClick={() => handleStartCall(lead)}
                         className="px-4 py-2 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors flex items-center gap-1.5"
@@ -304,12 +352,61 @@ export function FollowUpsView() {
             </div>
           )}
 
-          {/* 3. UPCOMING SECTION */}
+          {/* 3. MISSING NEXT ACTION SECTION */}
+          {missingActionLeads.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-[#F4F6F9] border border-[#12151C] text-[#12151C] text-[11px] font-mono font-bold uppercase flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-[#3B82F6]" />
+                  <span>Missing Next Step</span>
+                </span>
+                <span className="text-[12px] font-mono text-[#12151C]/60">
+                  ({missingActionLeads.length} leads with no scheduled follow-up)
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {missingActionLeads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    className="p-3.5 bg-white border border-[#E5E7EB] hover:border-[#12151C] flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] px-1.5 py-0.5 border border-[#E5E7EB]">
+                          {lead.type}
+                        </span>
+                        <span className="font-bold text-[#12151C]">
+                          {lead.business_name}
+                        </span>
+                        <span className="text-[11.5px] text-[#12151C]/60">
+                          ({lead.contact_name})
+                        </span>
+                      </div>
+                      <div className="text-[11.5px] text-[#12151C]/50 mt-1 italic">
+                        No follow-up action scheduled yet. Assign a step to keep this deal alive.
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleStartCall(lead)}
+                      className="px-3.5 py-1.5 bg-[#12151C] text-white text-[11.5px] font-medium hover:bg-[#3B82F6] self-end md:self-center shrink-0 flex items-center gap-1.5"
+                    >
+                      <Phone className="w-3 h-3" />
+                      <span>Assign Next Step</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. UPCOMING SECTION */}
           {upcomingLeads.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] text-[11px] font-mono font-medium uppercase">
-                  Upcoming
+                  Upcoming Schedule
                 </span>
                 <span className="text-[12px] font-mono text-[#12151C]/60">
                   ({upcomingLeads.length})
@@ -441,6 +538,8 @@ export function FollowUpsView() {
                             setNextActionText('Call back prospect');
                           } else if (out === 'WhatsApp Sent') {
                             setNextActionText('Check for WhatsApp reply');
+                          } else if (out === 'Interested') {
+                            setNextActionText('Send proposal or schedule demo');
                           }
                         }}
                         className={`p-2 text-[11.5px] font-medium text-left border transition-colors ${
