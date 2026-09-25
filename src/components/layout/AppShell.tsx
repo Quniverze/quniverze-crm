@@ -11,7 +11,9 @@ import {
   Briefcase,
   Search,
   Plus,
-  UserCheck
+  UserCheck,
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 interface AppShellProps {
@@ -26,6 +28,8 @@ export function AppShell({ children }: AppShellProps) {
     setSearchOpen,
     setTeamModalOpen,
     teamMembers,
+    currentUser,
+    logout,
     toast
   } = useCRM();
 
@@ -37,11 +41,13 @@ export function AppShell({ children }: AppShellProps) {
     { view: 'clients', label: 'Clients', icon: Briefcase }
   ];
 
+  const isAdmin = currentUser?.role === 'admin';
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C] font-sans">
       {/* Top Header */}
       <header className="h-14 bg-white border-b border-[#E5E7EB] px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
-        {/* Left: Brand Wordmark */}
+        {/* Left: Brand Wordmark & Nav */}
         <div className="flex items-center gap-6">
           <div
             onClick={() => setCurrentView('today')}
@@ -76,8 +82,19 @@ export function AppShell({ children }: AppShellProps) {
           </nav>
         </div>
 
-        {/* Right: Search, Team Roster, + Add Lead */}
+        {/* Right: User Badge, Search, Team, + Add Lead, Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* User Profile Badge */}
+          {currentUser && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-[#F4F6F9] border border-[#E5E7EB] text-[11.5px] font-mono">
+              <span className="w-1.5 h-1.5 bg-[#3B82F6] rounded-full"></span>
+              <span className="font-semibold text-[#12151C]">{currentUser.name}</span>
+              <span className="text-[#12151C]/50 uppercase text-[9.5px]">
+                ({currentUser.role})
+              </span>
+            </div>
+          )}
+
           {/* Search Trigger */}
           <button
             onClick={() => setSearchOpen(true)}
@@ -95,7 +112,7 @@ export function AppShell({ children }: AppShellProps) {
           <button
             onClick={() => setTeamModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-[#12151C]/80 hover:text-[#12151C] border border-[#E5E7EB] hover:border-[#12151C] bg-white transition-colors"
-            title="Manage Team Roster"
+            title="Team & Credentials"
           >
             <UserCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
             <span className="hidden sm:inline">Team</span>
@@ -111,6 +128,15 @@ export function AppShell({ children }: AppShellProps) {
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Lead</span>
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={logout}
+            className="p-1.5 text-[#12151C]/50 hover:text-[#12151C] hover:bg-[#F4F6F9] border border-transparent hover:border-[#E5E7EB] transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>

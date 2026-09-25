@@ -2,19 +2,46 @@
 
 import React, { useState } from 'react';
 import { useCRM } from '@/lib/store';
-import { X, UserPlus, Trash2, Shield } from 'lucide-react';
+import { UserRole } from '@/types/crm';
+import { X, UserPlus, Trash2, Key, Shield, Copy, Check } from 'lucide-react';
 
 export function TeamManageModal() {
-  const { teamModalOpen, setTeamModalOpen, teamMembers, addTeamMember, removeTeamMember } = useCRM();
-  const [newName, setNewName] = useState('');
+  const {
+    teamModalOpen,
+    setTeamModalOpen,
+    usersList,
+    addTeamMember,
+    removeTeamMember,
+    currentUser,
+    showToast
+  } = useCRM();
+
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<UserRole>('member');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   if (!teamModalOpen) return null;
 
-  const handleAdd = (e: React.FormEvent) => {
+  const isAdmin = currentUser?.role === 'admin';
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) return;
-    addTeamMember(newName.trim());
-    setNewName('');
+    if (!name.trim() || !username.trim() || !password.trim()) return;
+
+    await addTeamMember(name.trim(), username.trim(), password.trim(), role);
+    setName('');
+    setUsername('');
+    setPassword('');
+    setRole('member');
+  };
+
+  const handleCopyCredentials = (uName: string, pass: string, id: string) => {
+    navigator.clipboard.writeText(`Username: ${uName}\nPassword: ${pass}`);
+    setCopiedId(id);
+    showToast(`Copied credentials for ${uName}`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
@@ -23,17 +50,23 @@ export function TeamManageModal() {
       onClick={() => setTeamModalOpen(false)}
     >
       <div
-        className="w-full max-w-sm bg-white border border-[#E5E7EB] shadow-2xl overflow-hidden"
+        className="w-full max-w-lg bg-white border border-[#E5E7EB] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] bg-[#F4F6F9]">
           <div>
-            <h3 className="text-[14px] font-bold text-[#12151C] uppercase tracking-wide">
-              Team Roster
-            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">
+                Administration
+              </span>
+              <span className="text-[#E5E7EB]">/</span>
+              <h3 className="text-[14px] font-bold text-[#12151C] uppercase tracking-wide">
+                Team &amp; Access Roster
+              </h3>
+            </div>
             <p className="text-[12px] text-[#12151C]/60 mt-0.5">
-              People who can be assigned to leads.
+              Add members, assign roles, and distribute login credentials.
             </p>
           </div>
           <button
@@ -45,63 +78,180 @@ export function TeamManageModal() {
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4">
-          {/* Add form */}
-          <form onSubmit={handleAdd} className="flex gap-2">
-            <input
-              type="text"
-              autoFocus
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Add team member name..."
-              className="flex-1 px-3 py-1.5 text-[13px] bg-[#F4F6F9] border border-[#E5E7EB] focus:outline-none focus:border-[#3B82F6]"
-            />
-            <button
-              type="submit"
-              disabled={!newName.trim()}
-              className="px-3 py-1.5 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] disabled:opacity-40 transition-colors flex items-center gap-1"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Add</span>
-            </button>
-          </form>
+        <div className="p-5 space-y-5">
+          {/* Add form (Only for Admin) */}
+          {isAdmin ? (
+            <form onSubmit={handleAdd} className="space-y-3 p-3.5 bg-[#F4F6F9] border border-[#E5E7EB]">
+              <h4 className="text-[12px] font-mono uppercase tracking-wider font-bold text-[#12151C] flex items-center gap-1.5">
+                <UserPlus className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <span>Add Team Member</span>
+              </h4>
 
-          {/* Members List */}
-          <div className="divide-y divide-[#E5E7EB] border border-[#E5E7EB]">
-            {teamMembers.map((member) => (
-              <div
-                key={member}
-                className="p-2.5 flex items-center justify-between bg-white text-[13px]"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-[#12151C] text-white text-[11px] font-mono flex items-center justify-center font-bold">
-                    {member[0]?.toUpperCase()}
-                  </span>
-                  <span className="font-medium text-[#12151C]">{member}</span>
-                  {member === 'Abid' && (
-                    <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1 text-[#12151C]/60">
-                      Admin
-                    </span>
-                  )}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/70 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (!username) {
+                        setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''));
+                      }
+                    }}
+                    placeholder="e.g. Adil"
+                    className="w-full px-2.5 py-1.5 text-[12.5px] bg-white border border-[#E5E7EB] focus:outline-none"
+                  />
                 </div>
 
-                {member !== 'Abid' && (
-                  <button
-                    onClick={() => removeTeamMember(member)}
-                    className="p-1 text-[#12151C]/40 hover:text-[#12151C]"
-                    title="Remove from roster"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
+                <div>
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/70 mb-1">
+                    Username *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. adil"
+                    className="w-full px-2.5 py-1.5 text-[12.5px] font-mono bg-white border border-[#E5E7EB] focus:outline-none"
+                  />
+                </div>
               </div>
-            ))}
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/70 mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="e.g. adil2026"
+                    className="w-full px-2.5 py-1.5 text-[12.5px] font-mono bg-white border border-[#E5E7EB] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/70 mb-1">
+                    Role
+                  </label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as UserRole)}
+                    className="w-full px-2.5 py-1.5 text-[12.5px] bg-white border border-[#E5E7EB] focus:outline-none"
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={!name.trim() || !username.trim() || !password.trim()}
+                  className="px-3.5 py-1.5 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Create Account</span>
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] text-[12px] text-[#12151C]/70">
+              Only admins can create or delete team members.
+            </div>
+          )}
+
+          {/* Members List with Credentials */}
+          <div className="space-y-2">
+            <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/60">
+              Active Team Accounts ({usersList.length})
+            </h4>
+
+            <div className="divide-y divide-[#E5E7EB] border border-[#E5E7EB] max-h-64 overflow-y-auto">
+              {usersList.map((user) => {
+                const isAbid = user.name.toLowerCase() === 'abid';
+                return (
+                  <div
+                    key={user.id}
+                    className="p-3 bg-white flex items-center justify-between text-[12.5px] hover:bg-[#F4F6F9] transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[#12151C]">{user.name}</span>
+                        <span
+                          className={`text-[9.5px] font-mono uppercase px-1 border ${
+                            user.role === 'admin'
+                              ? 'bg-[#12151C] text-white border-[#12151C]'
+                              : 'bg-[#F4F6F9] text-[#12151C] border-[#E5E7EB]'
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+                      </div>
+
+                      {/* Username & Password Display */}
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-[#12151C]/70 mt-1">
+                        <span>User: <strong className="text-[#12151C]">{user.username}</strong></span>
+                        <span>•</span>
+                        <span>Pass: <strong className="text-[#12151C]">{user.password || '••••••'}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Copy Credentials Button */}
+                      {user.password && (
+                        <button
+                          onClick={() => handleCopyCredentials(user.username, user.password || '', user.id)}
+                          className="px-2 py-1 text-[11px] font-mono border border-[#E5E7EB] text-[#12151C] hover:border-[#12151C] flex items-center gap-1"
+                          title="Copy login details to send to member"
+                        >
+                          {copiedId === user.id ? (
+                            <>
+                              <Check className="w-3 h-3 text-[#3B82F6]" />
+                              <span>Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Delete Member (Admin only, not Abid) */}
+                      {isAdmin && !isAbid && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Remove account for ${user.name}?`)) {
+                              removeTeamMember(user.id);
+                            }
+                          }}
+                          className="p-1 text-[#12151C]/40 hover:text-[#12151C]"
+                          title="Remove user"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="pt-2 flex justify-end">
             <button
               onClick={() => setTeamModalOpen(false)}
-              className="px-4 py-1.5 text-[12px] bg-[#12151C] text-white font-medium hover:bg-[#3B82F6] transition-colors"
+              className="px-4 py-2 text-[12px] bg-[#12151C] text-white font-medium hover:bg-[#3B82F6] transition-colors"
             >
               Done
             </button>

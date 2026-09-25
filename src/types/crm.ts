@@ -3,6 +3,17 @@
  * Product (NivaOps) & Client Work
  */
 
+export type UserRole = 'admin' | 'member';
+
+export interface UserAccount {
+  id: string; // unique ID or display name
+  name: string; // display name
+  username: string; // login username
+  password?: string; // plain text for admin visibility / simple management
+  role: UserRole;
+  created_at?: string;
+}
+
 export type LeadType = 'Product' | 'Client Work';
 
 export type LeadStage =

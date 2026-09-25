@@ -3,6 +3,7 @@
 import React from 'react';
 import { useCRM } from '@/lib/store';
 import { AppShell } from '@/components/layout/AppShell';
+import { LoginView } from '@/components/auth/LoginView';
 import { TodayView } from '@/components/today/TodayView';
 import { LeadsView } from '@/components/leads/LeadsView';
 import { FollowUpsView } from '@/components/followups/FollowUpsView';
@@ -13,7 +14,12 @@ import { QuickAddLeadModal } from '@/components/leads/QuickAddLeadModal';
 import { TeamManageModal } from '@/components/common/TeamManageModal';
 
 export default function CRMApp() {
-  const { currentView } = useCRM();
+  const { currentView, currentUser } = useCRM();
+
+  // If not logged in, show the clean login screen
+  if (!currentUser) {
+    return <LoginView />;
+  }
 
   return (
     <AppShell>

@@ -11,11 +11,19 @@ import {
   DeliveryStatus,
   CallOutcome,
   CRMView,
+  UserAccount,
+  UserRole,
   PIPELINE_STAGES
 } from '@/types/crm';
 import { supabase, isSupabaseConfigured } from './supabase';
 
 interface CRMContextType {
+  // Auth state
+  currentUser: UserAccount | null;
+  usersList: UserAccount[];
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+
   // Navigation & Modals
   currentView: CRMView;
   setCurrentView: (view: CRMView) => void;
@@ -58,8 +66,8 @@ interface CRMContextType {
 
   // Team Members
   teamMembers: string[];
-  addTeamMember: (name: string) => void;
-  removeTeamMember: (name: string) => void;
+  addTeamMember: (name: string, username: string, password: string, role: UserRole) => Promise<void>;
+  removeTeamMember: (idOrName: string) => Promise<void>;
 
   // Toast
   toast: string | null;
@@ -69,11 +77,20 @@ interface CRMContextType {
 const CRMContext = createContext<CRMContextType | null>(null);
 
 const STORAGE_KEYS = {
+  AUTH_USER: 'quniverze_auth_user',
   LEADS: 'quniverze_crm_leads',
   ACTIVITIES: 'quniverze_crm_activities',
   CLIENTS: 'quniverze_crm_clients',
-  TEAM: 'quniverze_crm_team',
+  USERS_LIST: 'quniverze_crm_users_list',
   VIEW: 'quniverze_crm_view'
+};
+
+const DEFAULT_ADMIN: UserAccount = {
+  id: 'Abid',
+  name: 'Abid',
+  username: 'abid',
+  password: 'password123',
+  role: 'admin'
 };
 
 // Data mappers between local minimal model and Supabase PostgreSQL schema
@@ -185,7 +202,29 @@ function mapClientToRow(client: Client) {
   };
 }
 
+function parseUserRow(row: any): UserAccount {
+  let meta: any = {};
+  if (row.avatar_url) {
+    try {
+      meta = JSON.parse(row.avatar_url);
+    } catch {}
+  }
+  return {
+    id: row.id || row.name,
+    name: row.name || row.id,
+    username: meta.username || row.name.toLowerCase().replace(/\s+/g, ''),
+    password: meta.password || 'password123',
+    role: meta.role || (row.role === 'founder' ? 'admin' : 'member'),
+    created_at: row.created_at
+  };
+}
+
 export function CRMProvider({ children }: { children: React.ReactNode }) {
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [usersList, setUsersList] = useState<UserAccount[]>([DEFAULT_ADMIN]);
+
+  // Navigation & Modals
   const [currentView, setCurrentView] = useState<CRMView>('today');
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -198,12 +237,20 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
-  const [teamMembers, setTeamMembers] = useState<string[]>(['Abid']);
-  const isLoadedRef = useRef(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // Safe cloud execution helper
+  const executeCloud = async (fn: () => Promise<any>) => {
+    if (!isSupabaseConfigured) return;
+    try {
+      await fn();
+    } catch (err) {
+      console.error('Cloud sync error:', err);
+    }
   };
 
   // 1. Initial Load: Fetch from Supabase (with localStorage fallback cache)
@@ -212,15 +259,29 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsSyncing(true);
 
-      // Fetch team members
-      const { data: usersData } = await supabase.from('users').select('name');
+      // Fetch users
+      const { data: usersData } = await supabase.from('users').select('*');
       if (usersData && usersData.length > 0) {
-        const names = Array.from(new Set(['Abid', ...usersData.map((u) => u.name).filter(Boolean)]));
-        setTeamMembers(names);
-        localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(names));
+        const parsedUsers = usersData.map(parseUserRow);
+        // Ensure Abid is in users
+        if (!parsedUsers.some((u) => u.name.toLowerCase() === 'abid')) {
+          parsedUsers.unshift(DEFAULT_ADMIN);
+        }
+        setUsersList(parsedUsers);
+        localStorage.setItem(STORAGE_KEYS.USERS_LIST, JSON.stringify(parsedUsers));
       } else {
-        // Ensure Abid exists
-        await supabase.from('users').upsert({ id: 'Abid', name: 'Abid', role: 'founder' });
+        // Seed default admin in cloud
+        await supabase.from('users').upsert({
+          id: DEFAULT_ADMIN.id,
+          name: DEFAULT_ADMIN.name,
+          role: 'founder',
+          avatar_url: JSON.stringify({
+            username: DEFAULT_ADMIN.username,
+            password: DEFAULT_ADMIN.password,
+            role: DEFAULT_ADMIN.role
+          })
+        });
+        setUsersList([DEFAULT_ADMIN]);
       }
 
       // Fetch leads
@@ -259,14 +320,21 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       console.error('Supabase fetch failed, falling back to local cache', err);
     } finally {
       setIsSyncing(false);
-      isLoadedRef.current = true;
     }
   }, []);
 
   // Hydrate on mount
   useEffect(() => {
-    // Immediate hydrate from localStorage for instantaneous first render
     try {
+      const storedUser = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+      if (storedUser) setCurrentUser(JSON.parse(storedUser));
+
+      const storedUsersList = localStorage.getItem(STORAGE_KEYS.USERS_LIST);
+      if (storedUsersList) {
+        const parsed = JSON.parse(storedUsersList);
+        if (Array.isArray(parsed) && parsed.length > 0) setUsersList(parsed);
+      }
+
       const storedLeads = localStorage.getItem(STORAGE_KEYS.LEADS);
       if (storedLeads) setLeads(JSON.parse(storedLeads));
 
@@ -276,28 +344,19 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       const storedClients = localStorage.getItem(STORAGE_KEYS.CLIENTS);
       if (storedClients) setClients(JSON.parse(storedClients));
 
-      const storedTeam = localStorage.getItem(STORAGE_KEYS.TEAM);
-      if (storedTeam) {
-        const parsed = JSON.parse(storedTeam);
-        if (Array.isArray(parsed) && parsed.length > 0) setTeamMembers(parsed);
-      }
-
       const storedView = localStorage.getItem(STORAGE_KEYS.VIEW) as CRMView | null;
       if (storedView) setCurrentView(storedView);
     } catch (e) {
       console.error(e);
     }
 
-    // Now sync with live cloud
     refreshFromCloud();
 
-    // Re-sync when browser window regains focus (e.g. teammate switched apps)
     const handleFocus = () => {
       refreshFromCloud();
     };
     window.addEventListener('focus', handleFocus);
 
-    // Realtime channel subscription
     let channel: any;
     if (isSupabaseConfigured) {
       channel = supabase
@@ -323,19 +382,111 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refreshFromCloud]);
 
-  // Persist view preference
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.VIEW, currentView);
-  }, [currentView]);
+  // Auth actions
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const cleanUser = username.trim().toLowerCase();
+    const cleanPass = password.trim();
 
-  // Safe cloud execution helper
-  const executeCloud = async (fn: () => Promise<any>) => {
-    if (!isSupabaseConfigured) return;
-    try {
-      await fn();
-    } catch (err) {
-      console.error('Cloud sync error:', err);
+    // Check in local/cloud users list
+    let matched = usersList.find(
+      (u) => u.username.toLowerCase() === cleanUser && u.password === cleanPass
+    );
+
+    // If not found in current memory, try fresh cloud fetch
+    if (!matched && isSupabaseConfigured) {
+      try {
+        const { data } = await supabase.from('users').select('*');
+        if (data) {
+          const freshList = data.map(parseUserRow);
+          matched = freshList.find(
+            (u) => u.username.toLowerCase() === cleanUser && u.password === cleanPass
+          );
+          if (matched) setUsersList(freshList);
+        }
+      } catch {}
     }
+
+    // Default admin fallback for initial setup
+    if (!matched && cleanUser === 'abid' && (cleanPass === 'password123' || cleanPass === 'abid123')) {
+      matched = DEFAULT_ADMIN;
+    }
+
+    if (matched) {
+      setCurrentUser(matched);
+      localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(matched));
+      showToast(`Welcome, ${matched.name}`);
+      return { success: true };
+    }
+
+    return { success: false, error: 'Invalid username or password' };
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+    showToast('Logged out');
+  };
+
+  // Team Management
+  const teamMembers = usersList.map((u) => u.name);
+
+  const addTeamMember = async (name: string, username: string, password: string, role: UserRole) => {
+    const trimmedName = name.trim();
+    const trimmedUser = username.trim().toLowerCase();
+    const trimmedPass = password.trim();
+
+    if (!trimmedName || !trimmedUser || !trimmedPass) return;
+
+    const newAccount: UserAccount = {
+      id: trimmedName,
+      name: trimmedName,
+      username: trimmedUser,
+      password: trimmedPass,
+      role
+    };
+
+    setUsersList((prev) => {
+      const filtered = prev.filter((u) => u.id !== trimmedName && u.username !== trimmedUser);
+      const updated = [...filtered, newAccount];
+      localStorage.setItem(STORAGE_KEYS.USERS_LIST, JSON.stringify(updated));
+      return updated;
+    });
+
+    showToast(`Added team member: ${trimmedName}`);
+
+    executeCloud(async () => {
+      await supabase.from('users').upsert({
+        id: trimmedName,
+        name: trimmedName,
+        role: role === 'admin' ? 'founder' : 'outreach',
+        avatar_url: JSON.stringify({
+          username: trimmedUser,
+          password: trimmedPass,
+          role
+        })
+      });
+      await refreshFromCloud();
+    });
+  };
+
+  const removeTeamMember = async (idOrName: string) => {
+    if (idOrName.toLowerCase() === 'abid') {
+      showToast('Cannot remove Abid (primary admin)');
+      return;
+    }
+
+    setUsersList((prev) => {
+      const updated = prev.filter((u) => u.id !== idOrName && u.name !== idOrName);
+      localStorage.setItem(STORAGE_KEYS.USERS_LIST, JSON.stringify(updated));
+      return updated;
+    });
+
+    showToast(`Removed team member: ${idOrName}`);
+
+    executeCloud(async () => {
+      await supabase.from('users').delete().eq('id', idOrName);
+      await refreshFromCloud();
+    });
   };
 
   // --- Lead CRUD ---
@@ -348,10 +499,8 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       updated_at: now
     };
 
-    // Optimistic local update
     setLeads((prev) => [newLead, ...prev]);
 
-    // Initial activity
     const initAct: Activity = {
       id: 'act_' + Date.now(),
       lead_id: newLead.id,
@@ -363,7 +512,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     showToast(`Lead created: ${newLead.business_name}`);
 
-    // Asynchronously write to Supabase
     executeCloud(async () => {
       if (newLead.assigned_to) {
         await supabase
@@ -427,7 +575,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     updateLead(id, { stage });
 
-    // Activity
     const act: Activity = {
       id: 'act_' + Date.now(),
       lead_id: id,
@@ -447,7 +594,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
-    // Auto-create client on "Won"
     if (stage === 'Won') {
       const existingClient = clients.find((c) => c.lead_id === id);
       if (!existingClient) {
@@ -556,37 +702,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // --- Team Members ---
-  const addTeamMember = (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed || teamMembers.includes(trimmed)) return;
-
-    setTeamMembers((prev) => [...prev, trimmed]);
-    showToast(`Added team member: ${trimmed}`);
-
-    executeCloud(async () => {
-      await supabase.from('users').upsert({ id: trimmed, name: trimmed, role: 'outreach' });
-      await refreshFromCloud();
-    });
-  };
-
-  const removeTeamMember = (name: string) => {
-    if (name === 'Abid') {
-      showToast('Cannot remove Abid (primary admin)');
-      return;
-    }
-    setTeamMembers((prev) => prev.filter((m) => m !== name));
-    showToast(`Removed team member: ${name}`);
-
-    executeCloud(async () => {
-      await supabase.from('users').delete().eq('id', name);
-      await refreshFromCloud();
-    });
-  };
-
   return (
     <CRMContext.Provider
       value={{
+        currentUser,
+        usersList,
+        login,
+        logout,
         currentView,
         setCurrentView,
         selectedLeadId,

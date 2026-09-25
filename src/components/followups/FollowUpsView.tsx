@@ -14,8 +14,11 @@ import {
 } from 'lucide-react';
 
 export function FollowUpsView() {
-  const { leads, logCall, setSelectedLeadId, setCurrentView } = useCRM();
+  const { leads, logCall, setSelectedLeadId, setCurrentView, currentUser } = useCRM();
   const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
+  const [scope, setScope] = useState<'my' | 'all'>(
+    currentUser?.role === 'member' ? 'my' : 'all'
+  );
 
   // Active call modal lead
   const [callingLead, setCallingLead] = useState<Lead | null>(null);
@@ -31,14 +34,17 @@ export function FollowUpsView() {
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Filter leads that have an action and are not Won/Lost
+  // Filter leads that have an action, are not Won/Lost, and match scope
   const actionableLeads = useMemo(() => {
     return leads.filter((l) => {
       if (l.stage === 'Won' || l.stage === 'Lost') return false;
       if (typeFilter !== 'All' && l.type !== typeFilter) return false;
+      if (scope === 'my' && currentUser) {
+        if (l.assigned_to.toLowerCase() !== currentUser.name.toLowerCase()) return false;
+      }
       return Boolean(l.next_action || l.next_action_due);
     });
-  }, [leads, typeFilter]);
+  }, [leads, typeFilter, scope, currentUser]);
 
   // Overdue: next_action_due < today
   const overdueLeads = useMemo(() => {
@@ -119,21 +125,48 @@ export function FollowUpsView() {
           </p>
         </div>
 
-        {/* Type Filter */}
-        <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB] self-start sm:self-auto">
-          {(['All', 'Product', 'Client Work'] as const).map((t) => (
+        {/* Filters Group: Scope + Type */}
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {/* My Leads vs All Team Toggle */}
+          <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
             <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
+              onClick={() => setScope('my')}
               className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                typeFilter === t
-                  ? 'bg-[#12151C] text-white'
+                scope === 'my'
+                  ? 'bg-[#12151C] text-white shadow-sm'
                   : 'text-[#12151C]/70 hover:text-[#12151C]'
               }`}
             >
-              {t === 'Product' ? 'Product (NivaOps)' : t}
+              My Leads
             </button>
-          ))}
+            <button
+              onClick={() => setScope('all')}
+              className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                scope === 'all'
+                  ? 'bg-[#12151C] text-white shadow-sm'
+                  : 'text-[#12151C]/70 hover:text-[#12151C]'
+              }`}
+            >
+              All Team
+            </button>
+          </div>
+
+          {/* Type Filter */}
+          <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
+            {(['All', 'Product', 'Client Work'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                  typeFilter === t
+                    ? 'bg-[#12151C] text-white'
+                    : 'text-[#12151C]/70 hover:text-[#12151C]'
+                }`}
+              >
+                {t === 'Product' ? 'Product (NivaOps)' : t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -16,17 +16,25 @@ import {
 } from 'lucide-react';
 
 export function TodayView() {
-  const { leads, setCurrentView, setSelectedLeadId } = useCRM();
+  const { leads, setCurrentView, setSelectedLeadId, currentUser } = useCRM();
   const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
+  const [scope, setScope] = useState<'my' | 'all'>(
+    currentUser?.role === 'member' ? 'my' : 'all'
+  );
 
   // Today's date string YYYY-MM-DD
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // Filter leads by type
+  // Filter leads by type and scope (My Leads vs All)
   const filteredLeads = useMemo(() => {
-    if (typeFilter === 'All') return leads;
-    return leads.filter((l) => l.type === typeFilter);
-  }, [leads, typeFilter]);
+    return leads.filter((l) => {
+      if (typeFilter !== 'All' && l.type !== typeFilter) return false;
+      if (scope === 'my' && currentUser) {
+        return l.assigned_to.toLowerCase() === currentUser.name.toLowerCase();
+      }
+      return true;
+    });
+  }, [leads, typeFilter, scope, currentUser]);
 
   // Metric 1: New leads
   const newLeads = useMemo(() => {
@@ -73,7 +81,7 @@ export function TodayView() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
-      {/* Top Header & Type Filter */}
+      {/* Top Header & Type / Scope Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E7EB] pb-5">
         <div>
           <div className="flex items-center gap-2">
@@ -86,25 +94,52 @@ export function TodayView() {
             </h1>
           </div>
           <p className="text-[13px] text-[#12151C]/60 mt-0.5">
-            Real-time pipeline posture and immediate scheduled actions.
+            {scope === 'my' && currentUser ? `Immediate scheduled actions for ${currentUser.name}.` : 'Real-time pipeline posture and immediate scheduled actions.'}
           </p>
         </div>
 
-        {/* Type Filter Pill */}
-        <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB] self-start sm:self-auto">
-          {(['All', 'Product', 'Client Work'] as const).map((t) => (
+        {/* Filters Group: Scope + Type */}
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {/* My Leads vs All Team Toggle */}
+          <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
             <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
+              onClick={() => setScope('my')}
               className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                typeFilter === t
+                scope === 'my'
                   ? 'bg-[#12151C] text-white shadow-sm'
                   : 'text-[#12151C]/70 hover:text-[#12151C]'
               }`}
             >
-              {t === 'Product' ? 'Product (NivaOps)' : t}
+              My Leads
             </button>
-          ))}
+            <button
+              onClick={() => setScope('all')}
+              className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                scope === 'all'
+                  ? 'bg-[#12151C] text-white shadow-sm'
+                  : 'text-[#12151C]/70 hover:text-[#12151C]'
+              }`}
+            >
+              All Team
+            </button>
+          </div>
+
+          {/* Type Filter Pill */}
+          <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
+            {(['All', 'Product', 'Client Work'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                  typeFilter === t
+                    ? 'bg-[#12151C] text-white shadow-sm'
+                    : 'text-[#12151C]/70 hover:text-[#12151C]'
+                }`}
+              >
+                {t === 'Product' ? 'Product (NivaOps)' : t}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
