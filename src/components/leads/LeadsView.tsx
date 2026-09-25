@@ -12,12 +12,13 @@ import {
   Plus,
   ArrowRight,
   Clock,
-  CheckCircle2,
   Calendar,
   X,
   ExternalLink,
   Briefcase,
-  Upload
+  Upload,
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 
 export function LeadsView() {
@@ -25,6 +26,7 @@ export function LeadsView() {
     leads,
     opportunities,
     updateLead,
+    deleteLead,
     addActivity,
     getLeadActivities,
     selectedLeadId,
@@ -97,49 +99,65 @@ export function LeadsView() {
     setNewActivityNote('');
   };
 
+  const handleStatusChange = (newStatus: LeadStatus) => {
+    if (!activeLead) return;
+    updateLead(activeLead.id, { status: newStatus });
+    addActivity({
+      lead_id: activeLead.id,
+      type: 'stage_changed',
+      body: `Status changed to ${newStatus} by ${currentUser.name}`
+    });
+  };
+
   return (
-    <div className="h-full w-full flex flex-col md:flex-row overflow-hidden">
+    <div className="h-full w-full flex flex-col md:flex-row overflow-hidden bg-[#F4F6F9]">
       
-      {/* LEFT COLUMN: TABLE / LIST (Master) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden border-r border-[#E5E5E5] bg-white">
+      {/* LEFT COLUMN: DENSE LEADS DATA TABLE */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-white border-r border-[#E5E7EB]">
         
-        {/* Table Controls Header */}
-        <div className="p-4 border-b border-[#E5E5E5] space-y-3 flex-shrink-0 bg-white">
+        {/* Table Header & Controls */}
+        <div className="p-4 border-b border-[#E5E7EB] bg-white flex flex-col gap-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div>
-              <span className="section-label">PROSPECT DATABASE</span>
-              <h1 className="text-[22px] font-bold text-[#111111] tracking-tight">Leads</h1>
+            <div className="flex items-baseline gap-2">
+              <span className="section-label">CRM</span>
+              <h1 className="text-[18px] font-bold text-[#12151C] tracking-tight">Leads</h1>
+              <span className="text-[11px] font-mono text-[#6B7280]">
+                ({filteredLeads.length} of {leads.length})
+              </span>
             </div>
 
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setImportModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium border border-[#E5E5E5] hover:border-[#111111] rounded text-[#111111] bg-white transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-[#12151C] bg-white border border-[#E5E7EB] hover:bg-[#F4F6F9] rounded transition-colors"
               >
-                <Upload className="w-3.5 h-3.5" />
+                <Upload className="w-3 h-3" />
                 <span>Import CSV</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setQuickAddOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[12.5px] font-medium text-white bg-[#111111] hover:bg-black rounded transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium text-white bg-[#12151C] hover:bg-black rounded transition-colors"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" />
                 <span>Add Lead</span>
               </button>
             </div>
           </div>
 
-          {/* Search and Filters Bar */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <div className="flex-1 min-w-[180px] relative">
-              <Search className="w-3.5 h-3.5 text-[#6B6B6B] absolute left-3 top-1/2 -translate-y-1/2" />
+          {/* Search & Filter Bar */}
+          <div className="flex flex-wrap items-center gap-2 text-[12px]">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6B7280]" />
               <input
                 type="text"
+                placeholder="Search company, contact, phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Filter by name, phone, city..."
-                className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-[#E5E5E5] rounded bg-[#F7F7F5] focus:bg-white focus:outline-none focus:border-[#111111]"
+                className="w-full pl-8 pr-3 py-1 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[12px] text-[#12151C] placeholder:text-[#6B7280] focus:outline-none focus:border-[#3B82F6]"
               />
             </div>
 
@@ -147,7 +165,7 @@ export function LeadsView() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-[12.5px] border border-[#E5E5E5] rounded bg-white text-[#111111] focus:outline-none"
+              className="px-2.5 py-1 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[12px] text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
             >
               <option value="All">All Statuses</option>
               <option value="New">New</option>
@@ -166,47 +184,63 @@ export function LeadsView() {
             <select
               value={industryFilter}
               onChange={(e) => setIndustryFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-[12.5px] border border-[#E5E5E5] rounded bg-white text-[#111111] focus:outline-none"
+              className="px-2.5 py-1 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[12px] text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
             >
               <option value="All">All Industries</option>
               {industries.map((ind) => (
-                <option key={ind} value={ind}>
-                  {ind}
-                </option>
+                <option key={ind} value={ind}>{ind}</option>
               ))}
             </select>
 
-            {/* Assignee Filter */}
+            {/* Owner Filter */}
             <select
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-[12.5px] border border-[#E5E5E5] rounded bg-white text-[#111111] focus:outline-none"
+              className="px-2.5 py-1 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[12px] text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
             >
-              <option value="All">All Assignees</option>
-              <option value="usr_outreach">Adil (Outreach)</option>
-              <option value="usr_founder">Faslu (Founder)</option>
+              <option value="All">All Owners</option>
+              <option value="usr_founder">Founder</option>
+              <option value="usr_outreach">Outreach</option>
             </select>
           </div>
         </div>
 
-        {/* Leads Table */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Dense Table Container */}
+        <div className="flex-1 overflow-y-auto overflow-x-auto">
           {filteredLeads.length === 0 ? (
-            <div className="p-12 text-center text-[#6B6B6B] text-[13.5px]">
-              No leads match your filter criteria.
+            <div className="p-12 text-center text-[#6B7280] text-[13px] space-y-3">
+              <div>{leads.length === 0 ? 'No leads in the CRM yet.' : 'No leads match your filter criteria.'}</div>
+              {leads.length === 0 && (
+                <div className="flex justify-center gap-2">
+                  <button
+                    onClick={() => setQuickAddOpen(true)}
+                    className="px-3 py-1.5 bg-[#12151C] text-white text-[12px] font-medium rounded"
+                  >
+                    Add First Lead
+                  </button>
+                  <button
+                    onClick={() => setImportModalOpen(true)}
+                    className="px-3 py-1.5 bg-white border border-[#E5E7EB] text-[#12151C] text-[12px] font-medium rounded"
+                  >
+                    Import CSV
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-[13px]">
+            <table className="w-full text-left border-collapse text-[12.5px]">
               <thead>
-                <tr className="border-b border-[#E5E5E5] bg-[#F7F7F5] text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider sticky top-0 z-10">
-                  <th className="py-2.5 px-4 font-semibold">Business</th>
-                  <th className="py-2.5 px-3 font-semibold hidden sm:table-cell">Contact</th>
-                  <th className="py-2.5 px-3 font-semibold hidden md:table-cell">Industry</th>
-                  <th className="py-2.5 px-3 font-semibold">Status</th>
-                  <th className="py-2.5 px-3 font-semibold hidden lg:table-cell">Assigned</th>
+                <tr className="border-b border-[#E5E7EB] bg-[#F4F6F9] text-[10.5px] font-semibold text-[#6B7280] uppercase tracking-wider sticky top-0 z-10">
+                  <th className="py-2 px-3 font-semibold">Company / Lead</th>
+                  <th className="py-2 px-3 font-semibold hidden sm:table-cell">Contact</th>
+                  <th className="py-2 px-3 font-semibold hidden md:table-cell">Source</th>
+                  <th className="py-2 px-3 font-semibold">Status</th>
+                  <th className="py-2 px-3 font-semibold hidden lg:table-cell">Owner</th>
+                  <th className="py-2 px-3 font-semibold hidden xl:table-cell">Next Follow-up</th>
+                  <th className="py-2 px-3 font-semibold hidden xl:table-cell font-mono text-right">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E5E5]">
+              <tbody className="divide-y divide-[#E5E7EB]">
                 {filteredLeads.map((lead) => {
                   const isSelected = activeLead?.id === lead.id;
                   return (
@@ -214,28 +248,40 @@ export function LeadsView() {
                       key={lead.id}
                       onClick={() => setSelectedLeadId(lead.id)}
                       className={`cursor-pointer transition-colors ${
-                        isSelected ? 'bg-[#F4F4F1] font-medium' : 'hover:bg-[#FAFAF8]'
+                        isSelected
+                          ? 'bg-[#EBF3FE] font-medium border-l-2 border-[#3B82F6]'
+                          : 'hover:bg-[#F4F6F9]'
                       }`}
                     >
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-[#111111]">{lead.business_name}</div>
-                        <div className="text-[12px] text-[#6B6B6B] truncate max-w-[200px]">
-                          {lead.location} · {lead.phone}
+                      <td className="py-2 px-3">
+                        <div className="font-semibold text-[#12151C] leading-tight">
+                          {lead.business_name}
+                        </div>
+                        <div className="text-[11px] text-[#6B7280] truncate max-w-[180px]">
+                          {lead.industry} · {lead.location}
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-[#111111] hidden sm:table-cell">
+                      <td className="py-2 px-3 text-[#12151C] hidden sm:table-cell">
                         {lead.contact_name || '—'}
                       </td>
-                      <td className="py-3 px-3 text-[#6B6B6B] hidden md:table-cell">
-                        {lead.industry}
+                      <td className="py-2 px-3 text-[#6B7280] hidden md:table-cell text-[11.5px]">
+                        {lead.lead_source}
                       </td>
-                      <td className="py-3 px-3">
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#EEEEEC] text-[#111111]">
+                      <td className="py-2 px-3">
+                        <span className="text-[10.5px] font-medium px-2 py-0.5 rounded bg-[#F4F6F9] text-[#12151C] border border-[#E5E7EB]">
                           {lead.status}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-[12px] text-[#6B6B6B] hidden lg:table-cell">
+                      <td className="py-2 px-3 text-[11.5px] text-[#6B7280] hidden lg:table-cell">
                         {lead.assigned_to === 'usr_founder' ? 'Founder' : 'Outreach'}
+                      </td>
+                      <td className="py-2 px-3 text-[11.5px] text-[#6B7280] hidden xl:table-cell font-mono">
+                        {lead.next_follow_up_at
+                          ? new Date(lead.next_follow_up_at).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                          : '—'}
+                      </td>
+                      <td className="py-2 px-3 text-[11px] text-[#6B7280] hidden xl:table-cell font-mono text-right">
+                        {new Date(lead.created_at).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}
                       </td>
                     </tr>
                   );
@@ -246,137 +292,28 @@ export function LeadsView() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: LEAD DETAIL SLIDE-OVER / PANE (Detail) */}
-      <div className="w-full md:w-[480px] lg:w-[540px] h-full bg-[#F7F7F5] overflow-y-auto p-6 flex flex-col flex-shrink-0 border-t md:border-t-0 md:border-l border-[#E5E5E5]">
+      {/* RIGHT COLUMN: FOCUSED LEAD DETAIL PANE */}
+      <div className="w-full md:w-[460px] lg:w-[500px] h-full bg-[#F4F6F9] overflow-y-auto p-4 md:p-6 flex flex-col flex-shrink-0 border-t md:border-t-0 md:border-l border-[#E5E7EB]">
         {activeLead ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
             
-            {/* Lead Title & Main Attributes */}
-            <div className="pb-5 border-b border-[#E5E5E5] space-y-2">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-[24px] font-bold text-[#111111] tracking-tight">
-                  {activeLead.business_name}
-                </h2>
-              </div>
-              <div className="text-[13.5px] text-[#6B6B6B]">
-                {activeLead.industry} · {activeLead.location}
-              </div>
-
-              {/* Action Buttons: CALL, WHATSAPP, EMAIL */}
-              <div className="flex items-center gap-2 pt-2">
-                {activeLead.phone && (
-                  <a
-                    href={`tel:${activeLead.phone}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111111] hover:bg-black text-white text-[12.5px] font-medium rounded transition-colors"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>CALL</span>
-                  </a>
-                )}
-                {activeLead.phone && (
-                  <a
-                    href={`https://wa.me/${activeLead.phone.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E5E5E5] hover:border-[#111111] text-[#111111] bg-white text-[12.5px] font-medium rounded transition-colors"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-[#16803C]" />
-                    <span>WHATSAPP</span>
-                  </a>
-                )}
-                {activeLead.website && (
-                  <a
-                    href={`https://${activeLead.website.replace(/^https?:\/\//, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E5E5E5] hover:border-[#111111] text-[#111111] bg-white text-[12.5px] font-medium rounded transition-colors"
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>SITE</span>
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Section: CONTACT */}
-            <div className="p-4 bg-white border border-[#E5E5E5] rounded-lg space-y-2.5">
-              <div className="section-label">CONTACT DETAILS</div>
-              <div className="grid grid-cols-2 gap-3 text-[13px]">
+            {/* 1. Header: Company, Contact, Status, Owner, Primary Actions */}
+            <div className="bg-white border border-[#E5E7EB] rounded p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
                 <div>
-                  <span className="text-[#6B6B6B] block text-[11px]">Primary Person</span>
-                  <span className="font-medium text-[#111111]">{activeLead.contact_name || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-[#6B6B6B] block text-[11px]">Phone</span>
-                  <span className="font-mono font-medium text-[#111111]">{activeLead.phone || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-[#6B6B6B] block text-[11px]">Email</span>
-                  <span className="text-[#111111]">{activeLead.email || '—'}</span>
-                </div>
-                <div>
-                  <span className="text-[#6B6B6B] block text-[11px]">Instagram</span>
-                  <span className="text-[#111111]">{activeLead.instagram || '—'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Section: RESEARCH OBSERVATIONS */}
-            {activeLead.observation && (
-              <div className="p-4 bg-white border border-[#E5E5E5] rounded-lg space-y-2">
-                <div className="section-label">OBSERVATIONS &amp; SALES ANGLE</div>
-                <div className="text-[13.5px] text-[#111111] leading-relaxed">
-                  {activeLead.observation}
-                </div>
-              </div>
-            )}
-
-            {/* Section: OPPORTUNITY / VALUE */}
-            <div className="p-4 bg-white border border-[#E5E5E5] rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="section-label">OPPORTUNITY CONTEXT</div>
-                {leadOpp && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-[#111111] text-white uppercase">
-                    {leadOpp.stage}
-                  </span>
-                )}
-              </div>
-
-              {leadOpp ? (
-                <div className="space-y-2 text-[13px]">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-[#6B6B6B]">Estimated Deal Value:</span>
-                    <span className="text-[16px] font-bold text-[#111111]">
-                      ₹{leadOpp.estimated_value.toLocaleString()}
-                    </span>
+                  <h2 className="text-[20px] font-bold text-[#12151C] tracking-tight">
+                    {activeLead.business_name}
+                  </h2>
+                  <div className="text-[12.5px] text-[#6B7280] mt-0.5">
+                    {activeLead.contact_name ? `${activeLead.contact_name} · ` : ''}{activeLead.industry} · {activeLead.location}
                   </div>
-                  {leadOpp.next_action && (
-                    <div>
-                      <span className="text-[#6B6B6B] block text-[11px]">Next Action:</span>
-                      <span className="font-medium text-[#111111]">{leadOpp.next_action}</span>
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <div className="text-[13px] text-[#6B6B6B]">
-                  No active pipeline opportunity linked yet. Qualify lead to create opportunity.
-                </div>
-              )}
-            </div>
 
-            {/* Section: STATUS & ASSIGNMENT */}
-            <div className="p-4 bg-white border border-[#E5E5E5] rounded-lg space-y-3">
-              <div className="section-label">STATUS &amp; OWNERSHIP</div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
-                    Current Status
-                  </label>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <select
                     value={activeLead.status}
-                    onChange={(e) => updateLead(activeLead.id, { status: e.target.value as LeadStatus })}
-                    className="w-full px-2.5 py-1.5 text-[13px] border border-[#E5E5E5] rounded bg-white text-[#111111] focus:outline-none"
+                    onChange={(e) => handleStatusChange(e.target.value as LeadStatus)}
+                    className="text-[11px] font-semibold px-2 py-1 rounded bg-[#F4F6F9] text-[#12151C] border border-[#E5E7EB] focus:outline-none focus:border-[#3B82F6]"
                   >
                     <option value="New">New</option>
                     <option value="To Call">To Call</option>
@@ -389,73 +326,171 @@ export function LeadsView() {
                     <option value="Won">Won</option>
                     <option value="Lost">Lost</option>
                   </select>
-                </div>
 
-                <div>
-                  <label className="block text-[11px] font-semibold text-[#6B6B6B] mb-1">
-                    Assigned Owner
-                  </label>
-                  <select
-                    value={activeLead.assigned_to}
-                    onChange={(e) => updateLead(activeLead.id, { assigned_to: e.target.value })}
-                    className="w-full px-2.5 py-1.5 text-[13px] border border-[#E5E5E5] rounded bg-white text-[#111111] focus:outline-none"
+                  <button
+                    type="button"
+                    onClick={() => deleteLead(activeLead.id)}
+                    title="Delete Lead"
+                    className="p-1.5 text-[#6B7280] hover:text-[#12151C] rounded border border-transparent hover:border-[#E5E7EB]"
                   >
-                    <option value="usr_outreach">Adil (Outreach)</option>
-                    <option value="usr_founder">Faslu (Founder)</option>
-                  </select>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons: Phone, WhatsApp, Web */}
+              <div className="flex items-center gap-2 pt-1 border-t border-[#E5E7EB]">
+                {activeLead.phone && (
+                  <a
+                    href={`tel:${activeLead.phone}`}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[#12151C] hover:bg-black text-white text-[12px] font-medium rounded transition-colors"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Call {activeLead.phone}</span>
+                  </a>
+                )}
+                {activeLead.phone && (
+                  <a
+                    href={`https://wa.me/${activeLead.phone.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C] bg-white text-[12px] font-medium rounded transition-colors"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {activeLead.website && (
+                  <a
+                    href={`https://${activeLead.website.replace(/^https?:\/\//, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C] bg-white text-[12px] font-medium rounded transition-colors"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* 2. PROMINENT: "WHAT HAPPENS NEXT?" */}
+            <div className="p-3.5 bg-white border-l-2 border-l-[#3B82F6] border border-[#E5E7EB] rounded space-y-1.5">
+              <div className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+                NEXT ACTION
+              </div>
+              <div className="text-[13px] font-semibold text-[#12151C]">
+                {leadOpp?.next_action || (activeLead.status === 'To Call' ? 'Initial phone qualification call required' : 'Review status and schedule follow-up')}
+              </div>
+              <div className="text-[11.5px] text-[#6B7280]">
+                Assigned to: <span className="font-medium text-[#12151C]">{activeLead.assigned_to === 'usr_founder' ? 'Founder (Faslu)' : 'Outreach (Adil)'}</span>
+                {activeLead.next_follow_up_at && ` · Due: ${new Date(activeLead.next_follow_up_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
+              </div>
+            </div>
+
+            {/* 3. CONTACT INFORMATION */}
+            <div className="p-3.5 bg-white border border-[#E5E7EB] rounded space-y-2">
+              <div className="section-label">CONTACT INFORMATION</div>
+              <div className="grid grid-cols-2 gap-2 text-[12.5px]">
+                <div>
+                  <span className="text-[#6B7280] block text-[10.5px]">Primary Person</span>
+                  <span className="font-medium text-[#12151C]">{activeLead.contact_name || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280] block text-[10.5px]">Phone</span>
+                  <span className="font-mono text-[#12151C]">{activeLead.phone || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280] block text-[10.5px]">Email</span>
+                  <span className="text-[#12151C] truncate block">{activeLead.email || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280] block text-[10.5px]">Source</span>
+                  <span className="text-[#12151C]">{activeLead.lead_source}</span>
                 </div>
               </div>
             </div>
 
-            {/* Section: ACTIVITY TIMELINE (Section 17) */}
-            <div className="space-y-3">
+            {/* 4. RESEARCH OBSERVATIONS & NOTES */}
+            {(activeLead.observation || activeLead.notes) && (
+              <div className="p-3.5 bg-white border border-[#E5E7EB] rounded space-y-1.5">
+                <div className="section-label">RESEARCH &amp; CONTEXT</div>
+                {activeLead.observation && (
+                  <p className="text-[12.5px] text-[#12151C] leading-relaxed">
+                    {activeLead.observation}
+                  </p>
+                )}
+                {activeLead.notes && (
+                  <p className="text-[12px] text-[#4B5563] pt-1 border-t border-[#E5E7EB] leading-relaxed">
+                    {activeLead.notes}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 5. OPPORTUNITY CONTEXT */}
+            {leadOpp && (
+              <div className="p-3.5 bg-white border border-[#E5E7EB] rounded space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="section-label">OPPORTUNITY</div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#12151C] text-white">
+                    {leadOpp.stage}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[12px] text-[#6B7280]">Estimated Deal Value:</span>
+                  <span className="text-[15px] font-bold text-[#12151C] font-mono">
+                    ₹{leadOpp.estimated_value.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 6. ACTIVITY TIMELINE & NOTE COMPOSER */}
+            <div className="p-3.5 bg-white border border-[#E5E7EB] rounded space-y-3">
               <div className="section-label">ACTIVITY TIMELINE</div>
 
-              <div className="p-4 bg-white border border-[#E5E5E5] rounded-lg space-y-3">
+              {/* Note Composer */}
+              <form onSubmit={handleAddManualNote} className="space-y-2">
+                <textarea
+                  rows={2}
+                  placeholder="Add note or update on this lead..."
+                  value={newActivityNote}
+                  onChange={(e) => setNewActivityNote(e.target.value)}
+                  className="w-full p-2 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[12px] text-[#12151C] placeholder:text-[#6B7280] focus:outline-none focus:border-[#3B82F6]"
+                />
+                <button
+                  type="submit"
+                  disabled={!newActivityNote.trim()}
+                  className="px-3 py-1 bg-[#12151C] text-white text-[11.5px] font-medium rounded hover:bg-black disabled:opacity-40 transition-colors"
+                >
+                  Log Note
+                </button>
+              </form>
+
+              {/* History stream */}
+              <div className="divide-y divide-[#E5E7EB] pt-2">
                 {leadActivities.length === 0 ? (
-                  <div className="text-[12.5px] text-[#6B6B6B] py-2">
-                    No activity recorded for this lead yet.
+                  <div className="text-[12px] text-[#6B7280] py-2">
+                    No activities recorded yet for this lead.
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {leadActivities.map((act) => (
-                      <div key={act.id} className="text-[12.5px] border-l-2 border-[#111111] pl-3 py-0.5">
-                        <div className="text-[#111111] leading-relaxed">{act.body}</div>
-                        <div className="text-[11px] text-[#6B6B6B] mt-0.5">
-                          {new Date(act.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </div>
+                  leadActivities.map((act) => (
+                    <div key={act.id} className="py-2 text-[12px] space-y-0.5">
+                      <div className="text-[#12151C] leading-snug">
+                        {act.body}
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-[10.5px] text-[#6B7280] font-mono">
+                        {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(act.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                  ))
                 )}
-
-                {/* Add Manual Short Note */}
-                <form onSubmit={handleAddManualNote} className="pt-3 border-t border-[#E5E5E5] flex gap-2">
-                  <input
-                    type="text"
-                    value={newActivityNote}
-                    onChange={(e) => setNewActivityNote(e.target.value)}
-                    placeholder="Add a quick note or outcome..."
-                    className="flex-1 px-3 py-1.5 text-[12.5px] border border-[#E5E5E5] rounded focus:outline-none bg-[#F7F7F5]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newActivityNote.trim()}
-                    className="px-3 py-1.5 text-[12px] font-medium text-white bg-[#111111] hover:bg-black rounded disabled:opacity-40"
-                  >
-                    Post
-                  </button>
-                </form>
               </div>
             </div>
 
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center text-[#6B6B6B] text-[13.5px]">
-            Select a lead from the table to view details.
+          <div className="h-full flex items-center justify-center text-[13px] text-[#6B7280]">
+            Select a lead to inspect details.
           </div>
         )}
       </div>

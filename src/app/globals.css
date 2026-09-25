@@ -1,34 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #F7F7F5;
+  --color-graphite: #12151C;
+  --color-electric: #3B82F6;
+  --color-cloud: #F4F6F9;
+  --color-slate: #E5E7EB;
+
+  --color-bg: #F4F6F9;
   --color-surface: #FFFFFF;
-  --color-primary: #111111;
-  --color-secondary: #6B6B6B;
-  --color-border: #E5E5E5;
-  --color-border-subtle: #EEEEEC;
-  --color-accent: #111111;
-  --color-accent-blue: #2563EB;
-  --color-success: #16803C;
-  --color-danger: #C62828;
-  --color-warning: #B7791F;
+  --color-primary: #12151C;
+  --color-secondary: #4B5563;
+  --color-border: #E5E7EB;
+  --color-accent: #3B82F6;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
-  --bg: #F7F7F5;
+  --graphite: #12151C;
+  --electric: #3B82F6;
+  --cloud: #F4F6F9;
+  --slate: #E5E7EB;
+
+  --bg: #F4F6F9;
   --surface: #FFFFFF;
-  --text-primary: #111111;
-  --text-secondary: #6B6B6B;
-  --border: #E5E5E5;
-  --border-subtle: #EEEEEC;
-  --accent: #111111;
-  --accent-blue: #2563EB;
-  --success: #16803C;
-  --danger: #C62828;
-  --warning: #B7791F;
+  --text-primary: #12151C;
+  --text-secondary: #4B5563;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+  --accent: #3B82F6;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -44,7 +45,7 @@
     background-color: var(--bg);
     color: var(--text-primary);
     font-family: var(--font-sans);
-    font-size: 14px;
+    font-size: 13.5px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -61,57 +62,57 @@
   outline-offset: 1px;
 }
 
-/* Custom Scrollbars */
+/* Engineering-grade crisp scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4D4D0;
-  border-radius: 3px;
+  background: #D1D5DB;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B0B0AA;
+  background: #9CA3AF;
 }
 
-/* Editorial Typography Helpers */
+/* Typography Scale */
 .page-title {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
   color: var(--text-primary);
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .section-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
 }
 
 .big-metric {
-  font-size: 44px;
+  font-size: 36px;
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   line-height: 1;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .lead-name {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--text-primary);
 }
 
 .metadata-text {
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
@@ -121,12 +122,12 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--text-secondary);
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 3px;
-  padding: 1px 5px;
+  padding: 1px 4px;
   line-height: 1.2;
 }

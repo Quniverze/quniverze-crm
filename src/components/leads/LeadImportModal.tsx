@@ -64,21 +64,25 @@ Smile Dental Care,Dr. Vinod,9895123403,smiledental.in,Healthcare,Kozhikode`;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#111111]/40 backdrop-blur-none p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 backdrop-blur-none p-4"
       onClick={() => setImportModalOpen(false)}
     >
       <div
-        className="w-full max-w-lg bg-white border border-[#E5E5E5] rounded-lg shadow-xl overflow-hidden"
+        className="w-full max-w-lg bg-white border border-[#E5E7EB] shadow-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E5E5]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] bg-[#F4F6F9]/50">
           <div>
-            <h2 className="text-[16px] font-semibold text-[#111111]">Import Leads (CSV)</h2>
-            <p className="text-[12px] text-[#6B6B6B]">Automatic duplicate detection by phone number &amp; business name.</p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">02 Pipeline</span>
+              <span className="text-[#E5E7EB]">/</span>
+              <h2 className="text-[14px] font-bold text-[#12151C] uppercase tracking-wide">Import Leads (CSV)</h2>
+            </div>
+            <p className="text-[12px] text-[#12151C]/60 mt-0.5">Deduplication active by phone number and business name.</p>
           </div>
           <button
             onClick={() => setImportModalOpen(false)}
-            className="p-1 text-[#6B6B6B] hover:text-[#111111] rounded"
+            className="p-1 text-[#12151C]/60 hover:text-[#12151C] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -86,23 +90,23 @@ Smile Dental Care,Dr. Vinod,9895123403,smiledental.in,Healthcare,Kozhikode`;
 
         <div className="p-5 space-y-4">
           <div>
-            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-[#E5E5E5] hover:border-[#111111] rounded-lg cursor-pointer bg-[#F7F7F5] transition-colors">
-              <UploadCloud className="w-6 h-6 text-[#6B6B6B] mb-1.5" />
-              <span className="text-[13px] font-medium text-[#111111]">Upload .CSV file</span>
-              <span className="text-[11.5px] text-[#6B6B6B]">or paste raw CSV text below</span>
+            <label className="flex flex-col items-center justify-center w-full h-28 border border-dashed border-[#E5E7EB] hover:border-[#3B82F6] cursor-pointer bg-[#F4F6F9] transition-colors">
+              <UploadCloud className="w-6 h-6 text-[#12151C]/60 mb-1.5" />
+              <span className="text-[13px] font-medium text-[#12151C]">Upload .CSV file</span>
+              <span className="text-[11px] text-[#12151C]/60">or paste raw CSV text below</span>
               <input type="file" accept=".csv,text/csv" onChange={handleFileUpload} className="hidden" />
             </label>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11.5px] font-medium text-[#6B6B6B] uppercase tracking-wider">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/70">
                 CSV Content
               </label>
               <button
                 type="button"
                 onClick={() => setCsvText(sampleCsv)}
-                className="text-[11.5px] text-[#111111] underline hover:text-[#6B6B6B]"
+                className="text-[11px] font-mono uppercase text-[#3B82F6] hover:underline"
               >
                 Load sample
               </button>
@@ -112,28 +116,29 @@ Smile Dental Care,Dr. Vinod,9895123403,smiledental.in,Healthcare,Kozhikode`;
               value={csvText}
               onChange={(e) => setCsvText(e.target.value)}
               placeholder="Business,Contact Person,Phone,Website,Industry,Location..."
-              className="w-full px-3 py-2 text-[12.5px] font-mono text-[#111111] border border-[#E5E5E5] rounded focus:outline-none focus:border-[#111111] bg-[#FFFFFF] resize-none"
+              className="w-full px-3 py-2 text-[12px] font-mono text-[#12151C] border border-[#E5E7EB] bg-[#F4F6F9] focus:outline-none focus:border-[#3B82F6] focus:bg-white resize-none transition-colors"
             />
           </div>
 
           {result && (
-            <div className="p-3 bg-[#F7F7F5] border border-[#E5E5E5] rounded text-[13px] flex items-center justify-between">
-              <span className="font-medium text-[#16803C]">
-                ✓ Successfully imported {result.imported} leads
+            <div className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] text-[12px] flex items-center justify-between font-mono">
+              <span className="font-semibold text-[#12151C] flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-[#3B82F6]"></span>
+                Imported {result.imported} leads successfully
               </span>
               {result.duplicates > 0 && (
-                <span className="text-[#B7791F]">
+                <span className="text-[#12151C]/60">
                   ({result.duplicates} duplicates skipped)
                 </span>
               )}
             </div>
           )}
 
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E5E5E5]">
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-[#E5E7EB]">
             <button
               type="button"
               onClick={() => setImportModalOpen(false)}
-              className="px-3.5 py-1.5 text-[13px] text-[#6B6B6B] hover:text-[#111111] rounded border border-[#E5E5E5]"
+              className="px-4 py-2 text-[12px] font-mono uppercase tracking-wider text-[#12151C]/70 hover:text-[#12151C] border border-[#E5E7EB] hover:bg-[#F4F6F9] transition-colors"
             >
               Close
             </button>
@@ -141,7 +146,7 @@ Smile Dental Care,Dr. Vinod,9895123403,smiledental.in,Healthcare,Kozhikode`;
               type="button"
               onClick={handleParseAndImport}
               disabled={!csvText.trim()}
-              className="px-4 py-1.5 text-[13px] font-medium text-white bg-[#111111] hover:bg-black rounded disabled:opacity-40 transition-colors"
+              className="px-4 py-2 text-[12px] font-medium tracking-wide text-white bg-[#12151C] hover:bg-[#3B82F6] disabled:opacity-40 transition-colors"
             >
               Import Leads
             </button>

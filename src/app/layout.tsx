@@ -6,11 +6,12 @@ import { CRMProvider } from '@/lib/store';
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
+  weight: ['400', '500', '600', '700']
 });
 
 export const metadata: Metadata = {
-  title: 'Quniverze — Sales CRM & Outreach Command Center',
-  description: 'High-contrast, editorial sales cockpit for web, design, and software services.',
+  title: 'Quniverze. — Operating System',
+  description: 'Products. Services. Real impact. Software for businesses that move forward.',
 };
 
 export default function RootLayout({
@@ -20,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased min-h-screen bg-[#F7F7F5] text-[#111111]`}>
+      <body className={`${inter.className} antialiased min-h-screen bg-[#F4F6F9] text-[#12151C]`}>
         <CRMProvider>
           {children}
         </CRMProvider>

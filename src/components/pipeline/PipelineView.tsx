@@ -6,6 +6,7 @@ import { OpportunityStage } from '@/types/crm';
 import {
   Briefcase,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   Calendar,
   Phone,
@@ -23,8 +24,9 @@ export function PipelineView() {
   } = useCRM();
 
   const stages: OpportunityStage[] = [
+    'New',
     'Qualified',
-    'Meeting',
+    'Discovery',
     'Proposal',
     'Negotiation',
     'Won',
@@ -42,50 +44,77 @@ export function PipelineView() {
         totalValue
       };
     });
-  }, [opportunities, stages]);
+  }, [opportunities]);
 
   const getNextStage = (current: OpportunityStage): OpportunityStage | null => {
-    const order: OpportunityStage[] = [
+    const progression: OpportunityStage[] = [
+      'New',
       'Qualified',
-      'Meeting',
+      'Discovery',
       'Proposal',
       'Negotiation',
       'Won'
     ];
-    const idx = order.indexOf(current);
-    if (idx >= 0 && idx < order.length - 1) {
-      return order[idx + 1];
+    const idx = progression.indexOf(current);
+    if (idx >= 0 && idx < progression.length - 1) {
+      return progression[idx + 1];
     }
     return null;
   };
 
+  const getPrevStage = (current: OpportunityStage): OpportunityStage | null => {
+    const progression: OpportunityStage[] = [
+      'New',
+      'Qualified',
+      'Discovery',
+      'Proposal',
+      'Negotiation',
+      'Won'
+    ];
+    const idx = progression.indexOf(current);
+    if (idx > 0) {
+      return progression[idx - 1];
+    }
+    return null;
+  };
+
+  const activePipelineValue = opportunities
+    .filter((o) => o.stage !== 'Won' && o.stage !== 'Lost')
+    .reduce((s, o) => s + (o.estimated_value || 0), 0);
+
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden p-4 md:p-6">
+    <div className="h-full w-full flex flex-col overflow-hidden p-4 md:p-6 bg-[#F4F6F9]">
       
       {/* PIPELINE HEADER */}
-      <div className="flex items-baseline justify-between border-b border-[#E5E5E5] pb-4 mb-5 flex-shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#E5E7EB] pb-4 mb-4 flex-shrink-0 gap-2">
         <div>
-          <span className="section-label">DEALS &amp; OPPORTUNITIES</span>
-          <h1 className="page-title mt-1">Pipeline</h1>
+          <span className="section-label">STUDIO PIPELINE</span>
+          <h1 className="page-title mt-0.5">Opportunities</h1>
         </div>
 
-        <div className="flex items-center gap-4 text-[13px] text-[#6B6B6B]">
-          <span>
+        <div className="flex items-center gap-4 text-[12.5px] text-[#4B5563]">
+          <div>
             Active Pipeline:{' '}
-            <strong className="text-[#111111]">
+            <strong className="text-[#12151C] font-mono">
+              ₹{activePipelineValue.toLocaleString()}
+            </strong>
+          </div>
+          <div>
+            Won Value:{' '}
+            <strong className="text-[#12151C] font-mono">
               ₹
               {opportunities
-                .filter((o) => o.stage !== 'Won' && o.stage !== 'Lost')
+                .filter((o) => o.stage === 'Won')
                 .reduce((s, o) => s + (o.estimated_value || 0), 0)
                 .toLocaleString()}
             </strong>
-          </span>
+          </div>
         </div>
       </div>
 
-      {/* KANBAN BOARD */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
-        <div className="flex gap-4 h-full min-w-[1200px]">
+      {/* RESTRAINED KANBAN BOARD */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden pb-2">
+        <div className="flex gap-3 h-full min-w-[1300px]">
           {stageData.map(({ stage, opps, totalValue }) => {
             const isWon = stage === 'Won';
             const isLost = stage === 'Lost';
@@ -93,95 +122,107 @@ export function PipelineView() {
             return (
               <div
                 key={stage}
-                className="w-[280px] flex flex-col bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg overflow-hidden flex-shrink-0"
+                className="w-[260px] flex flex-col bg-white border border-[#E5E7EB] rounded overflow-hidden flex-shrink-0"
               >
-                {/* Column Header */}
-                <div className="p-3.5 border-b border-[#E5E5E5] bg-[#F7F7F5] flex items-baseline justify-between">
-                  <div>
-                    <span className="text-[12px] font-bold text-[#111111] uppercase tracking-wider">
+                {/* Stage Header */}
+                <div className="p-3 border-b border-[#E5E7EB] bg-[#F4F6F9] flex items-baseline justify-between">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[11.5px] font-bold text-[#12151C] uppercase tracking-wider">
                       {stage}
                     </span>
-                    <span className="text-[11.5px] text-[#6B6B6B] ml-2">
+                    <span className="text-[11px] font-mono text-[#6B7280]">
                       ({opps.length})
                     </span>
                   </div>
-                  <span className="text-[12px] font-semibold text-[#111111]">
+                  <span className="text-[11.5px] font-mono font-medium text-[#12151C]">
                     ₹{totalValue.toLocaleString()}
                   </span>
                 </div>
 
                 {/* Cards Container */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
                   {opps.length === 0 ? (
-                    <div className="py-8 text-center text-[#6B6B6B] text-[12px]">
-                      No deals in this stage
+                    <div className="py-12 text-center text-[#6B7280] text-[11.5px]">
+                      No deals
                     </div>
                   ) : (
                     opps.map((opp) => {
                       const lead = leads.find((l) => l.id === opp.lead_id);
                       const nextStage = getNextStage(opp.stage);
+                      const prevStage = getPrevStage(opp.stage);
 
                       return (
                         <div
                           key={opp.id}
-                          className="p-3.5 bg-white border border-[#E5E5E5] hover:border-[#111111] rounded-md shadow-xs transition-all space-y-2.5"
+                          className="p-3 bg-white border border-[#E5E7EB] hover:border-[#12151C] rounded transition-all space-y-2"
                         >
-                          {/* Business Name & Value */}
+                          {/* Company & Deal Value */}
                           <div className="flex items-start justify-between gap-2">
                             <button
                               onClick={() => {
                                 setSelectedLeadId(opp.lead_id);
                                 setCurrentView('leads');
                               }}
-                              className="font-bold text-[14.5px] text-[#111111] hover:underline text-left leading-snug"
+                              className="font-bold text-[13.5px] text-[#12151C] hover:underline text-left leading-tight"
                             >
                               {lead?.business_name || 'Opportunity'}
                             </button>
-                            <span className="text-[14px] font-bold text-[#111111] whitespace-nowrap">
-                              ₹{opp.estimated_value.toLocaleString()}
+                            <span className="text-[13px] font-bold text-[#12151C] font-mono whitespace-nowrap">
+                              ₹{(opp.estimated_value || 0).toLocaleString()}
                             </span>
                           </div>
 
                           {/* Contact & Industry */}
-                          <div className="text-[12px] text-[#6B6B6B]">
-                            {lead?.contact_name || 'Decision Maker'}
-                            {lead?.phone && ` · ${lead.phone}`}
+                          <div className="text-[11.5px] text-[#6B7280]">
+                            {lead?.contact_name ? `${lead.contact_name} · ` : ''}{lead?.industry}
                           </div>
 
-                          {/* Next Action */}
-                          {opp.next_action && (
-                            <div className="p-2 bg-[#F7F7F5] rounded text-[11.5px] text-[#111111] font-medium leading-tight">
-                              <span className="text-[#6B6B6B] block text-[10px] uppercase tracking-wider font-semibold">
-                                Next Action
-                              </span>
-                              {opp.next_action}
-                            </div>
-                          )}
+                          {/* Next Action Box */}
+                          <div className="p-2 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[11.5px] space-y-0.5">
+                            <span className="text-[9.5px] font-semibold text-[#6B7280] uppercase tracking-wider block">
+                              NEXT ACTION
+                            </span>
+                            <span className="text-[#12151C] font-medium line-clamp-2">
+                              {opp.next_action || 'Founder review & follow-up'}
+                            </span>
+                          </div>
 
-                          {/* Owner */}
-                          <div className="flex items-center justify-between text-[11px] text-[#6B6B6B] pt-1 border-t border-[#EEEEEC]">
-                            <span>
-                              Owner: {opp.assigned_to === 'usr_founder' ? 'Founder' : 'Outreach'}
+                          {/* Last updated & Stage Advancement */}
+                          <div className="pt-1.5 border-t border-[#E5E7EB] flex items-center justify-between text-[11px]">
+                            <span className="font-mono text-[#6B7280]">
+                              {new Date(opp.updated_at || opp.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                             </span>
 
-                            {/* Stage progression shortcuts */}
                             <div className="flex items-center gap-1">
-                              {!isWon && !isLost && nextStage && (
+                              {prevStage && (
                                 <button
-                                  onClick={() => moveOpportunityStage(opp.id, nextStage)}
-                                  className="px-2 py-1 text-[10.5px] font-semibold text-[#111111] bg-[#EEEEEC] hover:bg-[#111111] hover:text-white rounded transition-colors"
-                                  title={`Advance to ${nextStage}`}
+                                  type="button"
+                                  onClick={() => moveOpportunityStage(opp.id, prevStage)}
+                                  title={`Move back to ${prevStage}`}
+                                  className="p-1 text-[#6B7280] hover:text-[#12151C] border border-[#E5E7EB] hover:bg-[#F4F6F9] rounded"
                                 >
-                                  {nextStage} →
+                                  <ArrowLeft className="w-2.5 h-2.5" />
                                 </button>
                               )}
 
-                              {!isWon && !isLost && opp.stage === 'Negotiation' && (
+                              {nextStage && (
                                 <button
-                                  onClick={() => moveOpportunityStage(opp.id, 'Won')}
-                                  className="px-2 py-1 text-[10.5px] font-bold text-white bg-[#16803C] hover:bg-[#126830] rounded transition-colors"
+                                  type="button"
+                                  onClick={() => moveOpportunityStage(opp.id, nextStage)}
+                                  className="px-2 py-0.5 bg-[#12151C] hover:bg-black text-white rounded text-[10.5px] font-medium transition-colors flex items-center gap-1"
                                 >
-                                  Close Won ✓
+                                  <span>{nextStage}</span>
+                                  <ArrowRight className="w-2.5 h-2.5 text-[#3B82F6]" />
+                                </button>
+                              )}
+
+                              {opp.stage === 'Negotiation' && (
+                                <button
+                                  type="button"
+                                  onClick={() => moveOpportunityStage(opp.id, 'Won')}
+                                  className="px-2 py-0.5 bg-[#12151C] hover:bg-black text-white rounded text-[10.5px] font-medium transition-colors"
+                                >
+                                  Won Deal
                                 </button>
                               )}
                             </div>

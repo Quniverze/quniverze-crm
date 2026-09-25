@@ -4,12 +4,14 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import {
   User,
   UserRole,
+  CRMView,
   Lead,
   Opportunity,
   OpportunityStage,
   FollowUp,
   Activity,
   Client,
+  Project,
   CallOutcome,
   FollowUpTimingOption
 } from '@/types/crm';
@@ -19,7 +21,8 @@ import {
   SEED_OPPORTUNITIES,
   SEED_FOLLOW_UPS,
   SEED_ACTIVITIES,
-  SEED_CLIENTS
+  SEED_CLIENTS,
+  SEED_PROJECTS
 } from './seed-data';
 import { supabase, isSupabaseConfigured } from './supabase';
 
@@ -29,8 +32,8 @@ interface CRMContextType {
   setRole: (role: UserRole) => void;
 
   // View navigation
-  currentView: 'overview' | 'queue' | 'leads' | 'pipeline' | 'clients';
-  setCurrentView: (view: 'overview' | 'queue' | 'leads' | 'pipeline' | 'clients') => void;
+  currentView: CRMView;
+  setCurrentView: (view: CRMView) => void;
 
   // Selected lead for detail/call
   selectedLeadId: string | null;
@@ -49,6 +52,11 @@ interface CRMContextType {
   updateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
   moveOpportunityStage: (id: string, stage: OpportunityStage) => void;
   convertToClient: (opportunityId: string) => Client | null;
+
+  // Projects (Products & Client Work)
+  projects: Project[];
+  addProject: (data: Partial<Project>) => Project;
+  updateProject: (id: string, updates: Partial<Project>) => void;
 
   // Call Flow (Outreach Executive)
   processCallOutcome: (params: {
@@ -95,17 +103,17 @@ interface CRMContextType {
   toastMessage: string | null;
   showToast: (msg: string) => void;
 
-  // Reset demo
-  resetToDemoData: () => void;
+  // Cloud sync
+  refreshSync: () => Promise<void>;
 }
 
 const CRMContext = createContext<CRMContextType | null>(null);
 
-const STORAGE_KEY_PREFIX = 'quniverze_crm_v3_';
+const STORAGE_KEY_PREFIX = 'quniverze_crm_prod_';
 
 export function CRMProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRoleState] = useState<UserRole>('outreach');
-  const [currentView, setCurrentView] = useState<'overview' | 'queue' | 'leads' | 'pipeline' | 'clients'>('queue');
+  const [role, setRoleState] = useState<UserRole>('founder');
+  const [currentView, setCurrentView] = useState<CRMView>('overview');
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -113,19 +121,32 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>(SEED_PROJECTS);
 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Initialize from LocalStorage or Seed Data
+  // Initialize from LocalStorage or clean production state
   useEffect(() => {
     try {
+      // Clear legacy demo cache keys from prior test sessions
+      const legacyKeys = [
+        'quniverze_crm_v3_leads', 'quniverze_crm_v3_opps', 'quniverze_crm_v3_followups',
+        'quniverze_crm_v3_activities', 'quniverze_crm_v3_clients',
+        'quniverze_crm_v2_leads', 'quniverze_crm_leads'
+      ];
+      legacyKeys.forEach((k) => localStorage.removeItem(k));
+
       const savedRole = localStorage.getItem(STORAGE_KEY_PREFIX + 'role') as UserRole;
       if (savedRole === 'founder' || savedRole === 'outreach') {
         setRoleState(savedRole);
-        setCurrentView(savedRole === 'founder' ? 'overview' : 'queue');
+      }
+
+      const savedView = localStorage.getItem(STORAGE_KEY_PREFIX + 'view') as CRMView;
+      if (savedView) {
+        setCurrentView(savedView);
       }
 
       const savedLeads = localStorage.getItem(STORAGE_KEY_PREFIX + 'leads');
@@ -133,31 +154,19 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       const savedFUs = localStorage.getItem(STORAGE_KEY_PREFIX + 'followups');
       const savedActs = localStorage.getItem(STORAGE_KEY_PREFIX + 'activities');
       const savedClients = localStorage.getItem(STORAGE_KEY_PREFIX + 'clients');
+      const savedProjects = localStorage.getItem(STORAGE_KEY_PREFIX + 'projects');
 
-      if (savedLeads && savedOpps) {
-        setLeads(JSON.parse(savedLeads));
-        setOpportunities(JSON.parse(savedOpps));
-        setFollowUps(savedFUs ? JSON.parse(savedFUs) : SEED_FOLLOW_UPS);
-        setActivities(savedActs ? JSON.parse(savedActs) : SEED_ACTIVITIES);
-        setClients(savedClients ? JSON.parse(savedClients) : SEED_CLIENTS);
-      } else {
-        // First load: initialize with seed data
-        setLeads(SEED_LEADS);
-        setOpportunities(SEED_OPPORTUNITIES);
-        setFollowUps(SEED_FOLLOW_UPS);
-        setActivities(SEED_ACTIVITIES);
-        setClients(SEED_CLIENTS);
-      }
+      if (savedLeads) setLeads(JSON.parse(savedLeads));
+      if (savedOpps) setOpportunities(JSON.parse(savedOpps));
+      if (savedFUs) setFollowUps(JSON.parse(savedFUs));
+      if (savedActs) setActivities(JSON.parse(savedActs));
+      if (savedClients) setClients(JSON.parse(savedClients));
+      if (savedProjects) setProjects(JSON.parse(savedProjects));
     } catch (e) {
       console.error('Failed to load CRM state from localStorage', e);
-      setLeads(SEED_LEADS);
-      setOpportunities(SEED_OPPORTUNITIES);
-      setFollowUps(SEED_FOLLOW_UPS);
-      setActivities(SEED_ACTIVITIES);
-      setClients(SEED_CLIENTS);
     }
 
-    // Live cloud synchronization via Supabase (if configured)
+    // Live cloud synchronization via Supabase
     if (isSupabaseConfigured && supabase) {
       const syncWithSupabase = async () => {
         try {
@@ -170,33 +179,16 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
           ]);
 
           if (leadsRes.error) {
-            // Tables may not be created yet in Supabase
             console.warn('Supabase not ready or table missing:', leadsRes.error.message);
             return;
           }
 
-          if (leadsRes.data && leadsRes.data.length > 0) {
-            setLeads(leadsRes.data);
-            setOpportunities(oppsRes.data || []);
-            setFollowUps(fuRes.data || []);
-            setActivities(actsRes.data || []);
-            setClients(clientsRes.data || []);
-          } else {
-            // Fresh database tables: seed default demo records into Supabase in relational order
-            await supabase.from('users').upsert(SEED_USERS);
-            await supabase.from('leads').upsert(SEED_LEADS);
-            await Promise.allSettled([
-              supabase.from('opportunities').upsert(SEED_OPPORTUNITIES),
-              supabase.from('follow_ups').upsert(SEED_FOLLOW_UPS),
-              supabase.from('activities').upsert(SEED_ACTIVITIES),
-              supabase.from('clients').upsert(SEED_CLIENTS)
-            ]);
-            setLeads(SEED_LEADS);
-            setOpportunities(SEED_OPPORTUNITIES);
-            setFollowUps(SEED_FOLLOW_UPS);
-            setActivities(SEED_ACTIVITIES);
-            setClients(SEED_CLIENTS);
-          }
+          // In production: set actual real records from Supabase
+          setLeads(leadsRes.data || []);
+          setOpportunities(oppsRes.data || []);
+          setFollowUps(fuRes.data || []);
+          setActivities(actsRes.data || []);
+          setClients(clientsRes.data || []);
         } catch (err) {
           console.warn('Supabase sync skipped, continuing with local store:', err);
         }
@@ -259,7 +251,8 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(STORAGE_KEY_PREFIX + 'activities', JSON.stringify(activities));
       localStorage.setItem(STORAGE_KEY_PREFIX + 'clients', JSON.stringify(clients));
     }
-  }, [leads, opportunities, followUps, activities, clients]);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'projects', JSON.stringify(projects));
+  }, [leads, opportunities, followUps, activities, clients, projects]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -268,21 +261,54 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }, 2800);
   };
 
+  const handleSetCurrentView = (view: CRMView) => {
+    setCurrentView(view);
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'view', view);
+  };
+
   const currentUser: User = useMemo(() => {
-    return SEED_USERS.find((u) => u.role === role) || SEED_USERS[1];
+    return SEED_USERS.find((u) => u.role === role) || SEED_USERS[0];
   }, [role]);
 
   const setRole = (newRole: UserRole) => {
     setRoleState(newRole);
     localStorage.setItem(STORAGE_KEY_PREFIX + 'role', newRole);
-    // Set appropriate primary screen
     if (newRole === 'founder') {
-      setCurrentView('overview');
+      handleSetCurrentView('overview');
       showToast('Switched to Founder Command Center');
     } else {
-      setCurrentView('queue');
-      showToast('Switched to Outreach Call Queue');
+      handleSetCurrentView('followups');
+      showToast('Switched to Outreach Execution');
     }
+  };
+
+  // Projects CRUD
+  const addProject = (data: Partial<Project>): Project => {
+    const newPrj: Project = {
+      id: 'prj_' + Date.now(),
+      name: data.name || 'Untitled Project',
+      category: data.category || 'client',
+      tagline: data.tagline || '',
+      description: data.description || '',
+      client_id: data.client_id,
+      status: data.status || 'active',
+      tech_stack: data.tech_stack || ['Next.js', 'TypeScript', 'Tailwind'],
+      monthly_revenue: data.monthly_revenue,
+      contract_value: data.contract_value,
+      lead_owner: data.lead_owner || currentUser.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    setProjects((prev) => [newPrj, ...prev]);
+    showToast(`Project created: ${newPrj.name}`);
+    return newPrj;
+  };
+
+  const updateProject = (id: string, updates: Partial<Project>) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p))
+    );
+    showToast('Project updated');
   };
 
   // Lead CRUD
@@ -412,8 +438,9 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     // Also sync lead status
     const leadStatusMap: Record<OpportunityStage, Lead['status']> = {
+      New: 'New',
       Qualified: 'Qualified',
-      Meeting: 'Meeting',
+      Discovery: 'Meeting',
       Proposal: 'Proposal',
       Negotiation: 'Negotiation',
       Won: 'Won',
@@ -561,7 +588,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       if (!existingOpp) {
         addOpportunity({
           lead_id: leadId,
-          stage: outcome === 'Meeting Requested' ? 'Meeting' : 'Qualified',
+          stage: outcome === 'Meeting Requested' ? 'Discovery' : 'Qualified',
           estimated_value: estimatedValue || 35000,
           assigned_to: 'usr_founder',
           next_action: outcome === 'Meeting Requested' ? 'Conduct client meeting' : 'Founder follow-up call'
@@ -726,14 +753,33 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     return { imported, duplicates };
   };
 
-  const resetToDemoData = () => {
-    setLeads(SEED_LEADS);
-    setOpportunities(SEED_OPPORTUNITIES);
-    setFollowUps(SEED_FOLLOW_UPS);
-    setActivities(SEED_ACTIVITIES);
-    setClients(SEED_CLIENTS);
-    localStorage.clear();
-    showToast('Reset to default Quniverze CRM demo dataset');
+  const refreshSync = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      showToast('Offline mode (Local storage active)');
+      return;
+    }
+    try {
+      const [leadsRes, oppsRes, fuRes, actsRes, clientsRes] = await Promise.all([
+        supabase.from('leads').select('*').order('created_at', { ascending: false }),
+        supabase.from('opportunities').select('*').order('created_at', { ascending: false }),
+        supabase.from('follow_ups').select('*').order('due_at', { ascending: true }),
+        supabase.from('activities').select('*').order('created_at', { ascending: false }),
+        supabase.from('clients').select('*').order('created_at', { ascending: false })
+      ]);
+
+      if (!leadsRes.error) {
+        setLeads(leadsRes.data || []);
+        setOpportunities(oppsRes.data || []);
+        setFollowUps(fuRes.data || []);
+        setActivities(actsRes.data || []);
+        setClients(clientsRes.data || []);
+        showToast('Synchronized with Supabase cloud');
+      } else {
+        showToast('Sync error: ' + leadsRes.error.message);
+      }
+    } catch {
+      showToast('Failed to sync with Supabase');
+    }
   };
 
   return (
@@ -742,7 +788,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         setRole,
         currentView,
-        setCurrentView,
+        setCurrentView: handleSetCurrentView,
         selectedLeadId,
         setSelectedLeadId,
         leads,
@@ -755,6 +801,9 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         updateOpportunity,
         moveOpportunityStage,
         convertToClient,
+        projects,
+        addProject,
+        updateProject,
         processCallOutcome,
         activities,
         addActivity,
@@ -774,7 +823,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         importLeads,
         toastMessage,
         showToast,
-        resetToDemoData
+        refreshSync
       }}
     >
       {children}

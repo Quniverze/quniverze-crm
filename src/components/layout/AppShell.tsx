@@ -1,17 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCRM } from '@/lib/store';
+import { CRMView } from '@/types/crm';
 import {
-  PhoneCall,
   LayoutDashboard,
   Users,
   Kanban,
-  CheckCircle2,
+  CalendarClock,
+  Briefcase,
+  FolderGit2,
+  Activity as ActivityIcon,
+  Settings,
   Search,
   Plus,
   RotateCcw,
-  UserCheck
+  UserCheck,
+  PhoneCall,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface AppShellProps {
@@ -28,98 +35,133 @@ export function AppShell({ children }: AppShellProps) {
     setQuickAddOpen,
     leads,
     opportunities,
+    followUps,
     clients,
-    resetToDemoData,
+    projects,
+    refreshSync,
     toastMessage
   } = useCRM();
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   // Active counts
-  const queueCount = leads.filter(
-    (l) => l.status === 'To Call' || l.status === 'New' || l.status === 'Contacted'
+  const overdueCount = followUps.filter(
+    (f) => f.status === 'pending' && new Date(f.due_at).getTime() < Date.now()
   ).length;
+
   const activeOppsCount = opportunities.filter(
     (o) => o.stage !== 'Won' && o.stage !== 'Lost'
   ).length;
 
+  const navigateTo = (view: CRMView) => {
+    setCurrentView(view);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F7F7F5] text-[#111111]">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C]">
       
       {/* TOP COMMAND BAR */}
-      <header className="h-[52px] bg-white border-b border-[#E5E5E5] px-4 md:px-6 flex items-center justify-between z-20 flex-shrink-0">
+      <header className="h-[52px] bg-white border-b border-[#E5E7EB] px-4 md:px-6 flex items-center justify-between z-20 flex-shrink-0">
         
-        {/* Left: Brand Identity & Global Search */}
+        {/* Left: Brand Wordmark & Global Search */}
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <span className="font-bold tracking-[0.14em] text-[13.5px] text-[#111111] uppercase font-mono">
-              QUNIVERZE
+          <button
+            type="button"
+            onClick={() => navigateTo('overview')}
+            className="flex items-center gap-1.5 text-left group focus:outline-none"
+          >
+            <span className="text-[17px] font-bold tracking-tight text-[#12151C] select-none">
+              Quniverze<span className="text-[#3B82F6]">.</span>
             </span>
-            <span className="text-[11px] font-semibold text-[#737373] pl-3 border-l border-[#D4D4D0] uppercase tracking-wider hidden sm:inline">
-              Sales Cockpit
+            <span className="text-[11px] font-medium text-[#6B7280] hidden sm:inline pl-2 border-l border-[#E5E7EB] tracking-normal">
+              Operating System
             </span>
-          </div>
+          </button>
 
           {/* Quick Search Button */}
           <button
             type="button"
             onClick={() => setSearchModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded text-[12.5px] text-[#6B6B6B] hover:text-[#111111] bg-[#F7F7F5] border border-[#E5E5E5] hover:border-[#111111] transition-all"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded text-[12px] text-[#4B5563] hover:text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C] transition-colors"
             title="Global Search (Cmd/Ctrl + K)"
           >
-            <Search className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Search CRM</span>
+            <Search className="w-3.5 h-3.5 text-[#6B7280]" />
+            <span className="hidden md:inline">Search CRM...</span>
             <kbd className="kbd-pill hidden sm:inline-block">⌘K</kbd>
           </button>
         </div>
 
-        {/* Right: Operational Role Switcher & Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right: Cloud Sync, Role Switcher, Quick Action, Mobile Menu */}
+        <div className="flex items-center gap-2.5">
           
-          {/* TWO ROLES SWITCHER (Founder vs Outreach Executive) */}
-          <div className="flex items-center p-1 bg-[#EFEFED] border border-[#E0E0DC] rounded-md text-[12px]">
-            <button
-              type="button"
-              onClick={() => setRole('outreach')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded font-medium transition-all ${
-                currentUser.role === 'outreach'
-                  ? 'bg-white text-[#111111] shadow-xs font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111]'
-              }`}
-            >
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>Outreach Executive</span>
-            </button>
+          {/* Live Sync Status Indicator */}
+          <button
+            type="button"
+            onClick={refreshSync}
+            title="Cloud synchronization active. Click to refresh."
+            className="hidden lg:flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium text-[#4B5563] hover:text-[#12151C] border border-transparent hover:border-[#E5E7EB] hover:bg-[#F4F6F9] transition-colors"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
+            <span>Live Sync</span>
+          </button>
+
+          {/* Role Switcher (Founder vs Outreach Executive) */}
+          <div className="hidden sm:flex items-center p-0.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[11.5px]">
             <button
               type="button"
               onClick={() => setRole('founder')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
                 currentUser.role === 'founder'
-                  ? 'bg-white text-[#111111] shadow-xs font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111]'
+                  ? 'bg-white text-[#12151C] border border-[#E5E7EB] font-semibold'
+                  : 'text-[#6B7280] hover:text-[#12151C]'
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5" />
+              <UserCheck className="w-3 h-3 text-[#3B82F6]" />
               <span>Founder</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('outreach')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                currentUser.role === 'outreach'
+                  ? 'bg-white text-[#12151C] border border-[#E5E7EB] font-semibold'
+                  : 'text-[#6B7280] hover:text-[#12151C]'
+              }`}
+            >
+              <PhoneCall className="w-3 h-3 text-[#12151C]" />
+              <span>Outreach</span>
             </button>
           </div>
 
-          {/* Quick Add Lead */}
+          {/* Quick Add Lead Primary Action */}
           <button
             type="button"
             onClick={() => setQuickAddOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded text-[12.5px] font-semibold text-white bg-[#111111] hover:bg-black transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium text-white bg-[#12151C] hover:bg-black transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Add Lead</span>
           </button>
 
-          {/* Reset Demo Data Button */}
+          {/* Cloud Sync Manual Trigger */}
           <button
             type="button"
-            onClick={resetToDemoData}
-            title="Reset to default seed scenario"
-            className="p-2 text-[#6B6B6B] hover:text-[#111111] rounded border border-transparent hover:border-[#E5E5E5] hover:bg-[#F7F7F5]"
+            onClick={refreshSync}
+            title="Synchronize with cloud"
+            className="p-1.5 text-[#6B7280] hover:text-[#12151C] rounded border border-transparent hover:border-[#E5E7EB] hover:bg-[#F4F6F9] transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Mobile Menu Trigger */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-1.5 text-[#12151C] md:hidden rounded border border-[#E5E7EB]"
+            title="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
         </div>
       </header>
@@ -129,145 +171,375 @@ export function AppShell({ children }: AppShellProps) {
         
         {/* DESKTOP SIDEBAR */}
         <aside
-          style={{ width: 240, minWidth: 240 }}
-          className="w-[240px] min-w-[240px] bg-white border-r border-[#E5E5E5] flex flex-col justify-between p-3.5 hidden md:flex flex-shrink-0"
+          style={{ width: 230, minWidth: 230 }}
+          className="w-[230px] min-w-[230px] bg-white border-r border-[#E5E7EB] flex flex-col justify-between p-3 hidden md:flex flex-shrink-0"
         >
-          <nav className="space-y-1.5">
+          <div className="space-y-4">
             
-            {/* 1. Overview (Command Center) */}
-            <button
-              type="button"
-              onClick={() => setCurrentView('overview')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded text-[13px] font-medium transition-colors text-left ${
-                currentView === 'overview'
-                  ? 'bg-[#F4F4F1] text-[#111111] font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Overview</span>
-              </div>
-              {currentUser.role === 'founder' && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#111111] text-white flex-shrink-0">
-                  HQ
-                </span>
-              )}
-            </button>
-
-            {/* 2. Call Queue (Primary for Outreach) */}
-            <button
-              type="button"
-              onClick={() => setCurrentView('queue')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded text-[13px] font-medium transition-colors text-left ${
-                currentView === 'queue'
-                  ? 'bg-[#F4F4F1] text-[#111111] font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <PhoneCall className="w-4 h-4" />
-                <span>Call Queue</span>
-              </div>
-              {queueCount > 0 && (
-                <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    currentUser.role === 'outreach'
-                      ? 'bg-[#111111] text-white'
-                      : 'bg-[#EEEEEC] text-[#6B6B6B]'
-                  }`}
-                >
-                  {queueCount}
-                </span>
-              )}
-            </button>
-
-            {/* 3. Leads Database */}
-            <button
-              type="button"
-              onClick={() => setCurrentView('leads')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded text-[13px] font-medium transition-colors text-left ${
-                currentView === 'leads'
-                  ? 'bg-[#F4F4F1] text-[#111111] font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4" />
-                <span>Leads</span>
-              </div>
-              <span className="text-[11px] font-semibold text-[#6B6B6B] bg-[#EEEEEC] px-1.5 py-0.5 rounded flex-shrink-0">
-                {leads.length}
-              </span>
-            </button>
-
-            {/* 4. Pipeline */}
-            <button
-              type="button"
-              onClick={() => setCurrentView('pipeline')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded text-[13px] font-medium transition-colors text-left ${
-                currentView === 'pipeline'
-                  ? 'bg-[#F4F4F1] text-[#111111] font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Kanban className="w-4 h-4" />
-                <span>Pipeline</span>
-              </div>
-              {activeOppsCount > 0 && (
-                <span className="text-[11px] font-semibold text-[#111111] px-1.5 py-0.5 bg-[#EEEEEC] rounded flex-shrink-0">
-                  {activeOppsCount}
-                </span>
-              )}
-            </button>
-
-            {/* 5. Clients */}
-            <button
-              type="button"
-              onClick={() => setCurrentView('clients')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded text-[13px] font-medium transition-colors text-left ${
-                currentView === 'clients'
-                  ? 'bg-[#F4F4F1] text-[#111111] font-semibold'
-                  : 'text-[#6B6B6B] hover:text-[#111111] hover:bg-[#F7F7F5]'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Clients</span>
-              </div>
-              <span className="text-[11px] font-semibold text-[#6B6B6B] bg-[#EEEEEC] px-1.5 py-0.5 rounded flex-shrink-0">
-                {clients.length}
-              </span>
-            </button>
-          </nav>
-
-          {/* Operational Context Card in Sidebar Bottom */}
-          <div className="p-3 bg-[#F7F7F5] border border-[#E5E5E5] rounded-md space-y-1">
-            <div className="font-semibold text-[#111111] uppercase tracking-wider text-[10px] whitespace-nowrap">
-              {currentUser.role === 'founder' ? 'Founder Priority' : 'Outreach Priority'}
+            {/* Overview / Command Center */}
+            <div>
+              <button
+                type="button"
+                onClick={() => navigateTo('overview')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'overview'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard className={`w-3.5 h-3.5 ${currentView === 'overview' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Overview</span>
+                </div>
+                {currentUser.role === 'founder' && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#12151C] text-white">
+                    HQ
+                  </span>
+                )}
+              </button>
             </div>
-            <div className="text-[#6B6B6B] text-[11.5px] leading-tight">
-              {currentUser.role === 'founder'
-                ? 'Review hot proposals, conduct meetings & close contracts.'
-                : 'Work through call queue, record outcomes & schedule follow-ups.'}
+
+            {/* CRM SECTION */}
+            <div className="space-y-1">
+              <div className="px-2.5 text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+                CRM
+              </div>
+
+              {/* Leads */}
+              <button
+                type="button"
+                onClick={() => navigateTo('leads')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'leads'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className={`w-3.5 h-3.5 ${currentView === 'leads' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Leads</span>
+                </div>
+                <span className="text-[11px] font-medium text-[#6B7280] font-mono">
+                  {leads.length}
+                </span>
+              </button>
+
+              {/* Opportunities / Pipeline */}
+              <button
+                type="button"
+                onClick={() => navigateTo('opportunities')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'opportunities'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Kanban className={`w-3.5 h-3.5 ${currentView === 'opportunities' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Opportunities</span>
+                </div>
+                {activeOppsCount > 0 && (
+                  <span className="text-[11px] font-medium text-[#12151C] font-mono">
+                    {activeOppsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Follow-ups */}
+              <button
+                type="button"
+                onClick={() => navigateTo('followups')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'followups'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <CalendarClock className={`w-3.5 h-3.5 ${currentView === 'followups' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Follow-ups</span>
+                </div>
+                {overdueCount > 0 ? (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#12151C] text-white font-mono">
+                    {overdueCount}
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-[#6B7280] font-mono">
+                    {followUps.filter(f => f.status === 'pending').length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* WORK SECTION */}
+            <div className="space-y-1">
+              <div className="px-2.5 text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+                Work
+              </div>
+
+              {/* Clients */}
+              <button
+                type="button"
+                onClick={() => navigateTo('clients')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'clients'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Briefcase className={`w-3.5 h-3.5 ${currentView === 'clients' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Clients</span>
+                </div>
+                <span className="text-[11px] font-medium text-[#6B7280] font-mono">
+                  {clients.length}
+                </span>
+              </button>
+
+              {/* Projects */}
+              <button
+                type="button"
+                onClick={() => navigateTo('projects')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'projects'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <FolderGit2 className={`w-3.5 h-3.5 ${currentView === 'projects' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Projects</span>
+                </div>
+                <span className="text-[11px] font-medium text-[#6B7280] font-mono">
+                  {projects.length}
+                </span>
+              </button>
+            </div>
+
+            {/* OPERATIONS SECTION */}
+            <div className="space-y-1">
+              <div className="px-2.5 text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+                Operations
+              </div>
+
+              {/* Activity Stream */}
+              <button
+                type="button"
+                onClick={() => navigateTo('activity')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'activity'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ActivityIcon className={`w-3.5 h-3.5 ${currentView === 'activity' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Activity</span>
+                </div>
+              </button>
+
+              {/* Settings */}
+              <button
+                type="button"
+                onClick={() => navigateTo('settings')}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-[12.5px] transition-colors text-left ${
+                  currentView === 'settings'
+                    ? 'bg-[#F4F6F9] text-[#12151C] font-semibold border-l-2 border-[#3B82F6]'
+                    : 'text-[#4B5563] hover:text-[#12151C] hover:bg-[#F4F6F9]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Settings className={`w-3.5 h-3.5 ${currentView === 'settings' ? 'text-[#3B82F6]' : 'text-[#6B7280]'}`} />
+                  <span>Settings</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* STUDIO PROCESS LANGUAGE MOTIF */}
+          <div className="pt-3 border-t border-[#E5E7EB] space-y-1">
+            <div className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider px-1">
+              STUDIO PROCESS
+            </div>
+            <div className="grid grid-cols-2 gap-1 text-[10.5px] text-[#4B5563] px-1 py-1 bg-[#F4F6F9] rounded border border-[#E5E7EB]">
+              <div><span className="font-mono text-[#3B82F6] font-semibold">01</span> Understand</div>
+              <div><span className="font-mono text-[#3B82F6] font-semibold">02</span> Design</div>
+              <div><span className="font-mono text-[#3B82F6] font-semibold">03</span> Build</div>
+              <div><span className="font-mono text-[#3B82F6] font-semibold">04</span> Improve</div>
             </div>
           </div>
         </aside>
 
+        {/* MOBILE SLIDE-OUT DRAWER */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-[#12151C]/40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <div
+              className="w-[260px] h-full bg-white border-r border-[#E5E7EB] p-4 flex flex-col justify-between"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+                  <span className="text-[17px] font-bold text-[#12151C]">
+                    Quniverze<span className="text-[#3B82F6]">.</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="p-1 text-[#6B7280]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Role Switcher in Mobile Drawer */}
+                <div className="flex items-center p-0.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[11.5px]">
+                  <button
+                    type="button"
+                    onClick={() => setRole('founder')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded ${
+                      currentUser.role === 'founder'
+                        ? 'bg-white text-[#12151C] font-semibold border border-[#E5E7EB]'
+                        : 'text-[#6B7280]'
+                    }`}
+                  >
+                    Founder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('outreach')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded ${
+                      currentUser.role === 'outreach'
+                        ? 'bg-white text-[#12151C] font-semibold border border-[#E5E7EB]'
+                        : 'text-[#6B7280]'
+                    }`}
+                  >
+                    Outreach
+                  </button>
+                </div>
+
+                {/* Nav Links */}
+                <div className="space-y-1 text-[13px]">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('overview')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded ${
+                      currentView === 'overview' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-[#3B82F6]" />
+                    <span>Overview</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('leads')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded ${
+                      currentView === 'leads' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Users className="w-4 h-4 text-[#3B82F6]" />
+                      <span>Leads</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-[#6B7280]">{leads.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('opportunities')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded ${
+                      currentView === 'opportunities' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Kanban className="w-4 h-4 text-[#3B82F6]" />
+                      <span>Opportunities</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-[#6B7280]">{activeOppsCount}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('followups')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded ${
+                      currentView === 'followups' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <CalendarClock className="w-4 h-4 text-[#3B82F6]" />
+                      <span>Follow-ups</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-[#6B7280]">{followUps.filter(f => f.status === 'pending').length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('clients')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded ${
+                      currentView === 'clients' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Briefcase className="w-4 h-4 text-[#3B82F6]" />
+                      <span>Clients</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-[#6B7280]">{clients.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('projects')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded ${
+                      currentView === 'projects' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <FolderGit2 className="w-4 h-4 text-[#3B82F6]" />
+                      <span>Projects</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-[#6B7280]">{projects.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('activity')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded ${
+                      currentView === 'activity' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <ActivityIcon className="w-4 h-4 text-[#3B82F6]" />
+                    <span>Activity</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('settings')}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded ${
+                      currentView === 'settings' ? 'bg-[#F4F6F9] text-[#12151C] font-semibold' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 text-[#3B82F6]" />
+                    <span>Settings</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-[#6B7280] pt-3 border-t border-[#E5E7EB]">
+                Products. Services. Real impact.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MAIN STAGE CONTENT */}
-        <main className="flex-1 h-full overflow-hidden bg-[#F7F7F5]">
+        <main className="flex-1 h-full overflow-hidden bg-[#F4F6F9]">
           {children}
         </main>
       </div>
 
-      {/* MOBILE BOTTOM NAVIGATION (Section 23) */}
-      <nav className="h-[54px] bg-white border-t border-[#E5E5E5] flex items-center justify-around md:hidden z-20 flex-shrink-0">
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <nav className="h-[52px] bg-white border-t border-[#E5E7EB] flex items-center justify-around md:hidden z-20 flex-shrink-0">
         <button
           type="button"
-          onClick={() => setCurrentView('overview')}
-          className={`flex flex-col items-center justify-center flex-1 h-full text-[10.5px] font-medium ${
-            currentView === 'overview' ? 'text-[#111111] font-bold' : 'text-[#6B6B6B]'
+          onClick={() => navigateTo('overview')}
+          className={`flex flex-col items-center justify-center flex-1 h-full text-[10px] ${
+            currentView === 'overview' ? 'text-[#12151C] font-bold' : 'text-[#6B7280]'
           }`}
         >
           <LayoutDashboard className="w-4 h-4 mb-0.5" />
@@ -276,23 +548,9 @@ export function AppShell({ children }: AppShellProps) {
 
         <button
           type="button"
-          onClick={() => setCurrentView('queue')}
-          className={`flex flex-col items-center justify-center flex-1 h-full text-[10.5px] font-medium relative ${
-            currentView === 'queue' ? 'text-[#111111] font-bold' : 'text-[#6B6B6B]'
-          }`}
-        >
-          <PhoneCall className="w-4 h-4 mb-0.5" />
-          <span>Calls</span>
-          {queueCount > 0 && (
-            <span className="absolute top-1.5 right-6 w-2 h-2 rounded-full bg-[#C62828]" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setCurrentView('leads')}
-          className={`flex flex-col items-center justify-center flex-1 h-full text-[10.5px] font-medium ${
-            currentView === 'leads' ? 'text-[#111111] font-bold' : 'text-[#6B6B6B]'
+          onClick={() => navigateTo('leads')}
+          className={`flex flex-col items-center justify-center flex-1 h-full text-[10px] ${
+            currentView === 'leads' ? 'text-[#12151C] font-bold' : 'text-[#6B7280]'
           }`}
         >
           <Users className="w-4 h-4 mb-0.5" />
@@ -301,19 +559,33 @@ export function AppShell({ children }: AppShellProps) {
 
         <button
           type="button"
-          onClick={() => setCurrentView('pipeline')}
-          className={`flex flex-col items-center justify-center flex-1 h-full text-[10.5px] font-medium ${
-            currentView === 'pipeline' ? 'text-[#111111] font-bold' : 'text-[#6B6B6B]'
+          onClick={() => navigateTo('opportunities')}
+          className={`flex flex-col items-center justify-center flex-1 h-full text-[10px] ${
+            currentView === 'opportunities' ? 'text-[#12151C] font-bold' : 'text-[#6B7280]'
           }`}
         >
           <Kanban className="w-4 h-4 mb-0.5" />
           <span>Pipeline</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => navigateTo('followups')}
+          className={`flex flex-col items-center justify-center flex-1 h-full text-[10px] relative ${
+            currentView === 'followups' ? 'text-[#12151C] font-bold' : 'text-[#6B7280]'
+          }`}
+        >
+          <CalendarClock className="w-4 h-4 mb-0.5" />
+          <span>Follow-ups</span>
+          {overdueCount > 0 && (
+            <span className="absolute top-2 right-6 w-1.5 h-1.5 rounded-full bg-[#12151C]" />
+          )}
+        </button>
       </nav>
 
       {/* RESTRAINED TOAST NOTIFICATION */}
       {toastMessage && (
-        <div className="fixed bottom-16 md:bottom-6 right-6 z-50 bg-[#111111] text-white px-4 py-2.5 rounded shadow-lg text-[13px] font-medium animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="fixed bottom-16 md:bottom-6 right-6 z-50 bg-[#12151C] text-white px-4 py-2.5 rounded text-[12.5px] font-medium border border-[#E5E7EB]/20">
           {toastMessage}
         </div>
       )}

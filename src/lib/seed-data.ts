@@ -1,4 +1,4 @@
-import { User, Lead, Opportunity, FollowUp, Activity, Client } from '@/types/crm';
+import { User, Lead, Opportunity, FollowUp, Activity, Client, Project } from '@/types/crm';
 
 export const SEED_USERS: User[] = [
   {
@@ -527,7 +527,7 @@ export const SEED_OPPORTUNITIES: Opportunity[] = [
     lead_id: 'lead_nova_dental',
     estimated_value: 30000,
     probability: 60,
-    stage: 'Meeting',
+    stage: 'Discovery',
     assigned_to: 'usr_founder',
     next_action: 'Zoom demo with Dr. Rehana Thomas',
     next_follow_up_at: dateOffset(1), // Tomorrow
@@ -728,3 +728,59 @@ export const SEED_CLIENTS: Client[] = [
     updated_at: dateOffset(-10)
   }
 ];
+
+export const SEED_PROJECTS: Project[] = [
+  {
+    id: 'prj_nivaops',
+    name: 'NivaOps',
+    category: 'product',
+    tagline: 'Property management for modern operators',
+    description: 'Internal SaaS product built and operated by Quniverze for property managers, automating billing, lease compliance, and guest experiences.',
+    status: 'active',
+    tech_stack: ['Next.js', 'TypeScript', 'PostgreSQL', 'Tailwind'],
+    monthly_revenue: 120000,
+    lead_owner: 'usr_founder',
+    created_at: dateOffset(-60),
+    updated_at: dateOffset(-1)
+  },
+  {
+    id: 'prj_boven_frontier',
+    name: 'Boven Frontier',
+    category: 'client',
+    tagline: 'Digital platform for global trade',
+    description: 'Custom web application handling cross-border consignment manifests, rate calculation, and merchant clearance tracking.',
+    status: 'active',
+    tech_stack: ['React', 'Node.js', 'PostgreSQL', 'Tailwind'],
+    contract_value: 145000,
+    lead_owner: 'usr_founder',
+    created_at: dateOffset(-30),
+    updated_at: dateOffset(-2)
+  },
+  {
+    id: 'prj_igcc',
+    name: 'IGCC',
+    category: 'client',
+    tagline: 'Web platform and digital presence',
+    description: 'Bespoke corporate platform, membership directory, and interactive investor forum.',
+    status: 'active',
+    tech_stack: ['Next.js', 'TypeScript', 'Tailwind'],
+    contract_value: 95000,
+    lead_owner: 'usr_founder',
+    created_at: dateOffset(-45),
+    updated_at: dateOffset(-4)
+  },
+  {
+    id: 'prj_stayb',
+    name: 'StayB.',
+    category: 'venture',
+    tagline: 'Modern accommodation platform',
+    description: 'Co-founded internal venture offering unified booking and operational management for boutique short-stay properties.',
+    status: 'in_development',
+    tech_stack: ['Next.js', 'Tailwind', 'Supabase'],
+    monthly_revenue: 35000,
+    lead_owner: 'usr_founder',
+    created_at: dateOffset(-20),
+    updated_at: dateOffset(-1)
+  }
+];
+

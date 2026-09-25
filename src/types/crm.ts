@@ -1,5 +1,6 @@
 /**
  * QUNIVERZE CRM: TYPE DEFINITIONS
+ * Brand System v4.0
  */
 
 export type UserRole = 'founder' | 'outreach';
@@ -12,6 +13,16 @@ export interface User {
   phone?: string;
   avatar_url?: string;
 }
+
+export type CRMView =
+  | 'overview'
+  | 'leads'
+  | 'opportunities'
+  | 'followups'
+  | 'clients'
+  | 'projects'
+  | 'activity'
+  | 'settings';
 
 export type LeadStatus =
   | 'New'
@@ -49,8 +60,9 @@ export interface Lead {
 }
 
 export type OpportunityStage =
+  | 'New'
   | 'Qualified'
-  | 'Meeting'
+  | 'Discovery'
   | 'Proposal'
   | 'Negotiation'
   | 'Won'
@@ -59,6 +71,7 @@ export type OpportunityStage =
 export interface Opportunity {
   id: string;
   lead_id: string;
+  title?: string;
   estimated_value: number;
   probability: number;
   stage: OpportunityStage;
@@ -123,6 +136,25 @@ export interface Client {
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export type ProjectCategory = 'product' | 'client' | 'venture';
+export type ProjectStatus = 'active' | 'in_development' | 'maintained';
+
+export interface Project {
+  id: string;
+  name: string;
+  category: ProjectCategory;
+  tagline: string;
+  description: string;
+  client_id?: string;
+  status: ProjectStatus;
+  tech_stack: string[];
+  monthly_revenue?: number;
+  contract_value?: number;
+  lead_owner: string;
+  updated_at: string;
+  created_at: string;
 }
 
 export type CallOutcome =
