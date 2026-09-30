@@ -3,7 +3,16 @@
 import React, { useState } from 'react';
 import { useCRM } from '@/lib/store';
 import { UserRole, UserAccount } from '@/types/crm';
-import { X, UserPlus, Trash2, Key, Shield, Copy, Check, Edit2 } from 'lucide-react';
+import {
+  X,
+  UserPlus,
+  Trash2,
+  Copy,
+  Check,
+  Edit2,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 export function TeamManageModal() {
   const {
@@ -30,6 +39,9 @@ export function TeamManageModal() {
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('member');
+
+  // Password visibility map (Admin only)
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
 
   if (!teamModalOpen) return null;
 
@@ -75,6 +87,10 @@ export function TeamManageModal() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const toggleRevealPassword = (userId: string) => {
+    setRevealedPasswords((prev) => ({ ...prev, [userId]: !prev[userId] }));
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-4"
@@ -89,7 +105,7 @@ export function TeamManageModal() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">
-                Settings
+                Directory
               </span>
               <span className="text-[#E5E7EB]">/</span>
               <h3 className="text-[14.5px] font-semibold text-[#12151C] tracking-tight">
@@ -97,7 +113,9 @@ export function TeamManageModal() {
               </h3>
             </div>
             <p className="text-[12px] text-[#12151C]/60 mt-0.5">
-              Manage team members, update usernames and passwords, and assign roles.
+              {isAdmin
+                ? 'Manage team members, update usernames and passwords, and assign roles.'
+                : 'Team member directory.'}
             </p>
           </div>
           <button
@@ -111,7 +129,7 @@ export function TeamManageModal() {
         {/* Content */}
         <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Add Member Form (Admin only) - Uniform Inputs & Buttons */}
-          {isAdmin ? (
+          {isAdmin && (
             <form onSubmit={handleAdd} className="space-y-3 p-3.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg">
               <h4 className="text-[11.5px] font-mono uppercase tracking-wider font-semibold text-[#12151C] flex items-center gap-1.5">
                 <UserPlus className="w-3.5 h-3.5 text-[#3B82F6]" />
@@ -194,13 +212,9 @@ export function TeamManageModal() {
                 </button>
               </div>
             </form>
-          ) : (
-            <div className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg text-[12px] text-[#12151C]/70">
-              Only admins can create or delete team members.
-            </div>
           )}
 
-          {/* Members List with Credentials and Edit capability */}
+          {/* Members List */}
           <div className="space-y-2">
             <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50">
               Team Members ({usersList.length})
@@ -209,6 +223,10 @@ export function TeamManageModal() {
             <div className="divide-y divide-[#E5E7EB] border border-[#E5E7EB] rounded-lg overflow-hidden">
               {usersList.map((user) => {
                 const isAbid = user.name.toLowerCase() === 'abid';
+                const isCurrentUser =
+                  user.id === currentUser?.id ||
+                  user.username.toLowerCase() === currentUser?.username.toLowerCase() ||
+                  user.name.toLowerCase() === currentUser?.name.toLowerCase();
                 const isEditing = editingUserId === user.id;
 
                 if (isEditing) {
@@ -220,7 +238,7 @@ export function TeamManageModal() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-mono uppercase font-bold text-[#12151C]">
-                          Edit Credentials: {user.name}
+                          Edit {isCurrentUser ? 'Your Account' : `User: ${user.name}`}
                         </span>
                         <button
                           type="button"
@@ -240,6 +258,7 @@ export function TeamManageModal() {
                             type="text"
                             required
                             value={editName}
+                            disabled={!isAdmin && !isCurrentUser}
                             onChange={(e) => setEditName(e.target.value)}
                             className="w-full h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                           />
@@ -253,6 +272,7 @@ export function TeamManageModal() {
                             type="text"
                             required
                             value={editUsername}
+                            disabled={!isAdmin && !isCurrentUser}
                             onChange={(e) => setEditUsername(e.target.value)}
                             className="w-full h-8 px-2 text-[12px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                           />
@@ -279,8 +299,9 @@ export function TeamManageModal() {
                           </label>
                           <select
                             value={editRole}
+                            disabled={!isAdmin}
                             onChange={(e) => setEditRole(e.target.value as UserRole)}
-                            className="w-full h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
+                            className="w-full h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none disabled:bg-[#F4F6F9] disabled:text-[#12151C]/50"
                           >
                             <option value="member">Member</option>
                             <option value="admin">Admin</option>
@@ -316,7 +337,7 @@ export function TeamManageModal() {
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-[#12151C]">{user.name}</span>
                         <span
-                          className={`text-[9.5px] font-mono uppercase px-1 rounded border ${
+                          className={`text-[9.5px] font-mono uppercase px-1.5 py-0.2 rounded border ${
                             user.role === 'admin'
                               ? 'bg-[#12151C] text-white border-[#12151C]'
                               : 'bg-[#F4F6F9] text-[#12151C] border-[#E5E7EB]'
@@ -324,31 +345,59 @@ export function TeamManageModal() {
                         >
                           {user.role}
                         </span>
+                        {isCurrentUser && (
+                          <span className="text-[9.5px] font-mono text-[#3B82F6] font-medium">
+                            (You)
+                          </span>
+                        )}
                       </div>
 
-                      {/* Username & Password Display */}
+                      {/* Username & Credentials (Strictly protected by isAdmin check) */}
                       <div className="flex items-center gap-2 text-[11px] font-mono text-[#12151C]/60 mt-0.5">
-                        <span>User: <strong className="text-[#12151C]">{user.username}</strong></span>
-                        <span>•</span>
-                        <span>Pass: <strong className="text-[#12151C]">{user.password || '••••••'}</strong></span>
+                        <span>@{user.username}</span>
+
+                        {/* Passwords visible ONLY to Admin, NEVER to regular members */}
+                        {isAdmin && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <span>Pass:</span>
+                              <strong className="text-[#12151C]">
+                                {revealedPasswords[user.id] ? user.password : '••••••••'}
+                              </strong>
+                              <button
+                                type="button"
+                                onClick={() => toggleRevealPassword(user.id)}
+                                className="text-[#12151C]/40 hover:text-[#12151C] p-0.5 rounded transition-colors"
+                                title={revealedPasswords[user.id] ? 'Hide password' : 'Show password'}
+                              >
+                                {revealedPasswords[user.id] ? (
+                                  <EyeOff className="w-3 h-3" />
+                                ) : (
+                                  <Eye className="w-3 h-3" />
+                                )}
+                              </button>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Edit Button - Uniform 30px (h-7.5) */}
-                      {isAdmin && (
+                      {/* Edit Button: Admin can edit any user; member can only edit own profile */}
+                      {(isAdmin || isCurrentUser) && (
                         <button
                           onClick={() => handleStartEdit(user)}
                           className="h-7.5 px-2.5 text-[11px] font-mono border border-[#E5E7EB] text-[#12151C] hover:border-[#12151C] rounded-md flex items-center gap-1 transition-colors"
-                          title="Update username, password, or role"
+                          title={isAdmin ? "Update user account" : "Update your password"}
                         >
                           <Edit2 className="w-3 h-3 text-[#3B82F6]" />
-                          <span>Edit</span>
+                          <span>{isCurrentUser && !isAdmin ? 'Change Password' : 'Edit'}</span>
                         </button>
                       )}
 
-                      {/* Copy Credentials Button - Uniform 30px (h-7.5) */}
-                      {user.password && (
+                      {/* Copy Credentials Button: ONLY for Admin */}
+                      {isAdmin && user.password && (
                         <button
                           onClick={() => handleCopyCredentials(user.username, user.password || '', user.id)}
                           className="h-7.5 px-2.5 text-[11px] font-mono border border-[#E5E7EB] text-[#12151C] hover:border-[#12151C] rounded-md flex items-center gap-1 transition-colors"
@@ -368,7 +417,7 @@ export function TeamManageModal() {
                         </button>
                       )}
 
-                      {/* Delete Member (Admin only, not Abid) */}
+                      {/* Delete Member (Admin only, never Abid) */}
                       {isAdmin && !isAbid && (
                         <button
                           onClick={() => {
