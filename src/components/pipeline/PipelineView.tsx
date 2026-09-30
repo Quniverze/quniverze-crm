@@ -165,7 +165,11 @@ export function PipelineView() {
                     stageLeads.map((lead) => (
                       <div
                         key={lead.id}
-                        className="rounded-md p-3 bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C]/40 transition-all group space-y-2"
+                        className={`rounded-md p-3 border transition-all group space-y-2 ${
+                          isWon
+                            ? 'bg-white border-[#3B82F6]/40 shadow-xs'
+                            : 'bg-[#F4F6F9] border-[#E5E7EB] hover:border-[#12151C]/40'
+                        }`}
                       >
                         {/* Type & Owner */}
                         <div className="flex items-center justify-between text-[10px] font-mono text-[#12151C]/50">
@@ -233,14 +237,14 @@ export function PipelineView() {
                           )}
 
                           {isWon && (
-                            <span className="text-[10px] font-mono uppercase font-semibold text-[#12151C] flex items-center gap-1">
+                            <span className="text-[10px] font-mono uppercase font-semibold text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] px-2 py-0.5 rounded flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3 text-[#3B82F6]" />
-                              <span>Closed</span>
+                              <span>Closed Won</span>
                             </span>
                           )}
 
                           {isLost && (
-                            <span className="text-[10px] font-mono uppercase text-[#12151C]/40">
+                            <span className="text-[10px] font-mono uppercase text-[#12151C]/40 bg-[#F4F6F9] px-1.5 py-0.5 rounded">
                               Lost
                             </span>
                           )}

@@ -133,7 +133,7 @@ export function TeamManageModal() {
                         setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''));
                       }
                     }}
-                    placeholder="e.g. Adil"
+                    placeholder="Full name"
                     className="w-full h-8.5 px-2.5 text-[12.5px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>
@@ -147,7 +147,7 @@ export function TeamManageModal() {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="e.g. adil"
+                    placeholder="Username"
                     className="w-full h-8.5 px-2.5 text-[12.5px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>
@@ -163,7 +163,7 @@ export function TeamManageModal() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="e.g. adil2026"
+                    placeholder="Password"
                     className="w-full h-8.5 px-2.5 text-[12.5px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>

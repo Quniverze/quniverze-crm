@@ -548,7 +548,7 @@ export function FollowUpsView() {
                     type="text"
                     value={nextActionText}
                     onChange={(e) => setNextActionText(e.target.value)}
-                    placeholder="e.g. Follow up on proposal"
+                    placeholder="Next action description..."
                     className="w-full h-8.5 px-3 text-[12.5px] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>
@@ -600,7 +600,7 @@ export function FollowUpsView() {
                   type="text"
                   value={callNotes}
                   onChange={(e) => setCallNotes(e.target.value)}
-                  placeholder="e.g. Wants demo of hostel module on Thursday..."
+                  placeholder="Call notes & observations..."
                   className="w-full h-8.5 px-3 text-[12.5px] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
                 />
               </div>

@@ -134,7 +134,7 @@ export function QuickAddLeadModal() {
               autoFocus
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="e.g. Royal PG / Calicut Biriyani Hub"
+              placeholder="Business name"
               className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
             />
           </div>
@@ -149,7 +149,7 @@ export function QuickAddLeadModal() {
                 type="text"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
-                placeholder="e.g. Salman K."
+                placeholder="Contact name"
                 className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               />
             </div>
@@ -161,7 +161,7 @@ export function QuickAddLeadModal() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 XXXXX XXXXX"
+                placeholder="Phone number"
                 className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               />
             </div>
@@ -177,7 +177,7 @@ export function QuickAddLeadModal() {
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Kozhikode"
+                placeholder="City"
                 className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               />
             </div>
@@ -208,7 +208,7 @@ export function QuickAddLeadModal() {
               rows={2}
               value={angle}
               onChange={(e) => setAngle(e.target.value)}
-              placeholder="e.g. 120-bed PG running manually on WhatsApp; perfect for NivaOps demo..."
+              placeholder="Strategic angle / pitch rationale..."
               className="w-full p-2.5 text-[12px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white resize-none"
             />
           </div>
@@ -223,7 +223,7 @@ export function QuickAddLeadModal() {
                 type="text"
                 value={nextAction}
                 onChange={(e) => setNextAction(e.target.value)}
-                placeholder="e.g. Call owner"
+                placeholder="Next action..."
                 className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
               />
             </div>
@@ -249,7 +249,7 @@ export function QuickAddLeadModal() {
               type="number"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="e.g. 25000"
+              placeholder="Deal value"
               className="w-full h-8.5 px-3 text-[12.5px] font-mono text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
             />
           </div>

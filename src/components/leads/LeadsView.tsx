@@ -578,7 +578,7 @@ export function LeadsView() {
                       value: e.target.value ? Number(e.target.value) : undefined
                     })
                   }
-                  placeholder="e.g. 50000"
+                  placeholder="Est. value"
                   className="w-full h-8 px-2.5 text-[12px] font-mono bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none"
                 />
               </div>

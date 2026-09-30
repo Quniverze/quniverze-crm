@@ -27,7 +27,7 @@ export function LoginView() {
 
   return (
     <div className="min-h-screen w-screen bg-[#F4F6F9] flex flex-col items-center justify-center p-4 select-none">
-      <div className="w-full max-w-sm rounded-lg bg-white border border-[#E5E7EB] shadow-lg p-6 sm:p-8 space-y-6">
+      <div className="w-full max-w-sm rounded-xl bg-white border border-[#E5E7EB] shadow-[0_4px_20px_rgba(0,0,0,0.04)] p-7 sm:p-8 space-y-6">
         {/* Brand Header */}
         <div className="space-y-1.5 text-center">
           <div className="inline-flex items-baseline">
@@ -37,13 +37,13 @@ export function LoginView() {
             <span className="text-[22px] font-semibold text-[#3B82F6] ml-0.5">.</span>
           </div>
           <p className="text-[12.5px] text-[#12151C]/60">
-            Internal Sales Cockpit • Sign in to continue
+            Internal Sales Operating System
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="p-3 bg-[#12151C] text-white text-[12px] font-mono rounded-md flex items-center gap-2">
+          <div className="p-3 bg-[#12151C] text-white text-[12px] font-mono rounded-lg flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-[#3B82F6] shrink-0" />
             <span>{error}</span>
           </div>
@@ -63,8 +63,8 @@ export function LoginView() {
                 autoFocus
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. abid or member username"
-                className="w-full h-9 pl-9 pr-3 text-[13px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
+                placeholder="Username"
+                className="w-full h-9 pl-9 pr-3 text-[13px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#3B82F6] focus:bg-white transition-colors"
               />
             </div>
           </div>
@@ -80,8 +80,8 @@ export function LoginView() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full h-9 pl-9 pr-3 text-[13px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
+                placeholder="Password"
+                className="w-full h-9 pl-9 pr-3 text-[13px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-[#3B82F6] focus:bg-white transition-colors"
               />
             </div>
           </div>
@@ -89,19 +89,12 @@ export function LoginView() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full h-9 bg-[#12151C] text-white text-[12.5px] font-medium hover:bg-[#3B82F6] disabled:opacity-50 transition-colors flex items-center justify-center gap-2 mt-2 rounded-md shadow-xs"
+            className="w-full h-9 bg-[#12151C] text-white text-[12.5px] font-medium hover:bg-[#3B82F6] disabled:opacity-50 transition-colors flex items-center justify-center gap-2 mt-3 rounded-lg shadow-xs"
           >
             <span>{isLoading ? 'Verifying...' : 'Sign In'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>
-
-        {/* Footer Hint */}
-        <div className="pt-4 border-t border-[#E5E7EB] text-center">
-          <p className="text-[11px] font-mono text-[#12151C]/50">
-            Initial Admin: <span className="text-[#12151C] font-semibold">abid</span> / <span className="text-[#12151C] font-semibold">password123</span>
-          </p>
-        </div>
       </div>
     </div>
   );
