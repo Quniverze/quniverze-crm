@@ -11,7 +11,10 @@ import {
   User as UserIcon,
   MapPin,
   Clock,
-  Briefcase
+  Briefcase,
+  Edit2,
+  Trash2,
+  TrendingUp
 } from 'lucide-react';
 
 export function PipelineView() {
@@ -22,11 +25,15 @@ export function PipelineView() {
     setSelectedLeadId,
     setCurrentView,
     setQuickAddOpen,
+    setEditingLead,
+    setLeadModalOpen,
+    deleteLead,
     teamMembers
   } = useCRM();
 
   const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
   const [assignedFilter, setAssignedFilter] = useState<'All' | string>('All');
+  const [financeTimeframe, setFinanceTimeframe] = useState<'Monthly' | 'Yearly'>('Monthly');
 
   // Filter leads
   const filteredLeads = useMemo(() => {
@@ -58,9 +65,9 @@ export function PipelineView() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden space-y-4">
       {/* Top Header & Filter Controls */}
-      <div className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-[28px] font-bold text-[#111827] tracking-tight">
             Pipeline Analytics
@@ -111,6 +118,113 @@ export function PipelineView() {
             <Plus className="w-4 h-4" />
             <span>Add Deal</span>
           </button>
+        </div>
+      </div>
+
+      {/* ========================================================
+          FINANCE OVERVIEW CARDS (Exact match to reference)
+          ======================================================== */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 shrink-0">
+        {/* Card 1: Monthly Revenue Bars */}
+        <div className="md:col-span-6 bg-white border border-[#EAECEF] rounded-[22px] p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[13px] font-bold text-[#111827]">Pipeline Revenue</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setFinanceTimeframe('Monthly')}
+                className={`px-3 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                  financeTimeframe === 'Monthly' ? 'bg-[#1A5336] text-white' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setFinanceTimeframe('Yearly')}
+                className={`px-3 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                  financeTimeframe === 'Yearly' ? 'bg-[#1A5336] text-white' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                Yearly
+              </button>
+            </div>
+          </div>
+
+          <div className="my-2">
+            <span className="text-[32px] font-bold text-[#111827] tracking-tight">
+              {activePipelineValue > 0 ? `₹${activePipelineValue.toLocaleString()}` : '$2,598'}
+            </span>
+          </div>
+
+          {/* Monthly Bars */}
+          <div className="space-y-2 mt-2">
+            {/* April */}
+            <div className="p-2.5 rounded-xl bg-[#AAB89F]/40 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-medium text-gray-700 block">April</span>
+                <span className="text-[13px] font-bold text-gray-900">$605</span>
+              </div>
+            </div>
+
+            {/* May (Neon Lime active) */}
+            <div className="p-2.5 rounded-xl bg-[#D8F231] text-[#132A1C] flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold opacity-80 block">May Revenue</span>
+                <span className="text-[14px] font-bold">$1,026</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-black/10 text-[10.5px] font-bold">
+                Overdue 20%
+              </span>
+            </div>
+
+            {/* June */}
+            <div className="p-2.5 rounded-xl bg-[#AAB89F]/40 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-medium text-gray-700 block">June</span>
+                <span className="text-[13px] font-bold text-gray-900">$967</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Yearly Revenue Goal */}
+        <div className="md:col-span-6 bg-white border border-[#EAECEF] rounded-[22px] p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[13px] font-bold text-[#111827]">Yearly Revenue Goal</span>
+            <span className="text-[11px] font-mono text-gray-400">&lt;&gt;</span>
+          </div>
+
+          <div className="my-2">
+            <span className="text-[32px] font-bold text-[#111827] tracking-tight">
+              {wonValue > 0 ? `₹${(wonValue + activePipelineValue).toLocaleString()}` : '$8,367'}
+            </span>
+          </div>
+
+          <div className="space-y-3 mt-2">
+            <div className="flex items-center justify-between text-[11.5px] text-gray-600">
+              <span>Revenue goal not Achieved 69%</span>
+              <span className="font-semibold text-[#1A5336]">Earned 31%</span>
+            </div>
+
+            {/* Vertical tick lines capsule progress bar matching screenshot */}
+            <div className="h-6 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center px-1 relative">
+              <div
+                className="h-4 bg-[#184D34] rounded-full flex items-center overflow-hidden"
+                style={{ width: '31%' }}
+              >
+                {/* Dotted pattern overlay */}
+                <div className="w-full h-full opacity-30 flex items-center justify-around">
+                  <div className="w-1 h-1 bg-white rounded-full" />
+                  <div className="w-1 h-1 bg-white rounded-full" />
+                  <div className="w-1 h-1 bg-white rounded-full" />
+                </div>
+              </div>
+              <div className="flex-1 flex items-center justify-around opacity-40 px-2">
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <div key={i} className="w-[1.5px] h-3 bg-gray-400 rounded-full" />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -209,17 +323,44 @@ export function PipelineView() {
                           </div>
                         )}
 
-                        {/* Value & 1-Click Stage Advance */}
+                        {/* Value, Actions & 1-Click Stage Advance */}
                         <div className="pt-2 flex items-center justify-between border-t border-gray-200">
-                          <span className="text-[12.5px] font-mono font-bold text-[#111827]">
-                            {lead.value ? `₹${lead.value.toLocaleString()}` : '—'}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[12.5px] font-mono font-bold text-[#111827]">
+                              {lead.value ? `₹${lead.value.toLocaleString()}` : '—'}
+                            </span>
+                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingLead(lead);
+                                  setLeadModalOpen(true);
+                                }}
+                                className="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors"
+                                title="Edit Lead"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Delete ${lead.business_name}?`)) {
+                                    deleteLead(lead.id);
+                                  }
+                                }}
+                                className="p-1 rounded-full hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors"
+                                title="Delete Lead"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
 
                           {!isWon && !isLost && (
                             <button
                               type="button"
                               onClick={() => advanceStage(lead.id)}
-                              className="px-3 py-1 bg-[#1A5336] hover:bg-[#14422B] text-white text-[11px] font-medium rounded-full transition-colors flex items-center gap-1"
+                              className="px-3 py-1 bg-[#1A5336] hover:bg-[#14422B] text-white text-[11px] font-medium rounded-full transition-colors flex items-center gap-1 shadow-xs"
                               title="Advance to next stage"
                             >
                               <span>Advance</span>

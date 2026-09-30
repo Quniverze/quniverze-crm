@@ -49,6 +49,8 @@ export function LeadsView() {
     selectedLeadId,
     setSelectedLeadId,
     setQuickAddOpen,
+    setEditingLead,
+    setLeadModalOpen,
     updateLead,
     setStage,
     deleteLead,
@@ -168,9 +170,134 @@ export function LeadsView() {
   return (
     <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden">
       {/* ========================================================
-          Left / Main: High-Density Table of Leads
+          Left / Main: Tasks & High-Density Table of Leads
           ======================================================== */}
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-white border border-[#EAECEF] rounded-[22px] shadow-xs mr-0 md:mr-3">
+        {/* Top 3 Stat Cards matching Tasks Reference (Sage, Neon Lime, Off-White) */}
+        <div className="p-4 bg-[#F8FAFB] border-b border-[#EAECEF]">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[12px] font-semibold text-gray-500 uppercase tracking-wider">
+              All time Completed
+            </span>
+            <span className="text-[11px] font-mono text-gray-400">&lt;&gt;</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {/* Card 1: Sage Card */}
+            <div className="bg-[#AAB89F] text-[#132A1C] rounded-2xl p-3.5 flex flex-col justify-between min-h-[90px] shadow-xs">
+              <div className="text-[28px] font-bold leading-none tracking-tight">
+                {leads.length > 0 ? leads.length : 36}
+              </div>
+              <div className="text-[11.5px] font-medium opacity-90 mt-2">
+                Total Tasks
+              </div>
+            </div>
+
+            {/* Card 2: Neon Lime Card */}
+            <div className="bg-[#D8F231] text-[#132A1C] rounded-2xl p-3.5 flex flex-col justify-between min-h-[90px] shadow-xs">
+              <div className="text-[28px] font-bold leading-none tracking-tight">
+                2h
+              </div>
+              <div className="text-[11.5px] font-medium opacity-90 mt-2">
+                Avg Per Day
+              </div>
+            </div>
+
+            {/* Card 3: Slate Card */}
+            <div className="bg-white border border-gray-200 text-[#111827] rounded-2xl p-3.5 flex flex-col justify-between min-h-[90px] shadow-xs">
+              <div className="text-[28px] font-bold leading-none tracking-tight">
+                72h
+              </div>
+              <div className="text-[11.5px] font-medium text-gray-500 mt-2">
+                Total Tasks
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stacked Stylized Category Cards (Sales, Design, Meeting) */}
+        <div className="p-4 bg-white border-b border-[#EAECEF] space-y-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[13px] font-bold text-[#111827]">Today Tasks</span>
+            <button
+              onClick={() => setQuickAddOpen(true)}
+              className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-gray-900 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {/* Card 1: Sales (White Card) */}
+            <div
+              onClick={() => setTypeFilter(typeFilter === 'Product' ? 'All' : 'Product')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                typeFilter === 'Product'
+                  ? 'bg-gray-50 border-[#1A5336] ring-1 ring-[#1A5336]'
+                  : 'bg-white border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              <div>
+                <h3 className="text-[20px] font-bold text-gray-800 tracking-tight leading-none">
+                  Sales
+                </h3>
+                <span className="text-[11px] text-gray-400 mt-1 block">
+                  Product SaaS Leads ({leads.filter((l) => l.type === 'Product').length})
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10.5px] font-mono text-gray-400 block">Start</span>
+                <span className="text-[12.5px] font-semibold text-gray-800">03:20 PM</span>
+              </div>
+            </div>
+
+            {/* Card 2: Design (Neon Lime Card) */}
+            <div
+              onClick={() => setTypeFilter(typeFilter === 'Client Work' ? 'All' : 'Client Work')}
+              className={`p-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-between ${
+                typeFilter === 'Client Work'
+                  ? 'bg-[#D8F231] text-[#132A1C] ring-2 ring-[#132A1C]'
+                  : 'bg-[#D8F231] text-[#132A1C] hover:opacity-95'
+              }`}
+            >
+              <div>
+                <h3 className="text-[20px] font-bold tracking-tight leading-none">
+                  Design
+                </h3>
+                <span className="text-[11px] font-medium opacity-80 mt-1 block">
+                  Client Deliverables ({leads.filter((l) => l.type === 'Client Work').length})
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10.5px] font-mono opacity-80 block">Start</span>
+                <span className="text-[12.5px] font-bold">06:20 PM</span>
+              </div>
+            </div>
+
+            {/* Card 3: Meeting (Sage Card) */}
+            <div
+              onClick={() => setAttentionFilter(attentionFilter === 'Overdue' ? 'All' : 'Overdue')}
+              className={`p-3.5 rounded-2xl transition-all cursor-pointer flex items-center justify-between ${
+                attentionFilter === 'Overdue'
+                  ? 'bg-[#AAB89F] text-[#132A1C] ring-2 ring-[#132A1C]'
+                  : 'bg-[#AAB89F] text-[#132A1C] hover:opacity-95'
+              }`}
+            >
+              <div>
+                <h3 className="text-[20px] font-bold tracking-tight leading-none">
+                  Meeting
+                </h3>
+                <span className="text-[11px] font-medium opacity-80 mt-1 block">
+                  Scheduled Touchpoints ({leads.filter((l) => l.next_action).length})
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10.5px] font-mono opacity-80 block">Start</span>
+                <span className="text-[12.5px] font-bold">08:10 PM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Filter & Control Bar */}
         <div className="p-4 border-b border-[#EAECEF] space-y-3 shrink-0">
           <div className="flex items-center justify-between gap-3">
@@ -355,14 +482,44 @@ export function LeadsView() {
                         )}
                       </div>
 
-                      {/* Value / Owner */}
-                      <div className="col-span-2 text-right">
-                        <span className="text-[13px] font-mono font-bold text-[#111827] block">
-                          {lead.value ? `₹${lead.value.toLocaleString()}` : '—'}
-                        </span>
-                        <span className="text-[11px] font-mono text-gray-500 block mt-0.5">
-                          {lead.assigned_to}
-                        </span>
+                      {/* Value / Owner / Actions */}
+                      <div className="col-span-2 text-right flex items-center justify-end gap-2">
+                        <div>
+                          <span className="text-[13px] font-mono font-bold text-[#111827] block">
+                            {lead.value ? `₹${lead.value.toLocaleString()}` : '—'}
+                          </span>
+                          <span className="text-[11px] font-mono text-gray-500 block mt-0.5">
+                            {lead.assigned_to}
+                          </span>
+                        </div>
+
+                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingLead(lead);
+                              setLeadModalOpen(true);
+                            }}
+                            className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
+                            title="Edit Lead"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Delete ${lead.business_name}?`)) {
+                                deleteLead(lead.id);
+                              }
+                            }}
+                            className="p-1 rounded-full hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition-colors"
+                            title="Delete Lead"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -386,15 +543,42 @@ export function LeadsView() {
                           </div>
                         </div>
 
-                        <div className="text-right shrink-0">
-                          {lead.value && (
-                            <span className="text-[12.5px] font-mono font-bold text-[#111827] block">
-                              ₹{lead.value.toLocaleString()}
+                        <div className="text-right shrink-0 flex items-center gap-2">
+                          <div>
+                            {lead.value && (
+                              <span className="text-[12.5px] font-mono font-bold text-[#111827] block">
+                                ₹{lead.value.toLocaleString()}
+                              </span>
+                            )}
+                            <span className="text-[11px] font-mono text-gray-500 block">
+                              {lead.assigned_to}
                             </span>
-                          )}
-                          <span className="text-[11px] font-mono text-gray-500 block">
-                            {lead.assigned_to}
-                          </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingLead(lead);
+                                setLeadModalOpen(true);
+                              }}
+                              className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Delete ${lead.business_name}?`)) {
+                                  deleteLead(lead.id);
+                                }
+                              }}
+                              className="p-1 rounded-full hover:bg-rose-50 text-rose-500"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -438,12 +622,25 @@ export function LeadsView() {
                 {activeLead.business_name}
               </h2>
             </div>
-            <button
-              onClick={() => setSelectedLeadId(null)}
-              className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingLead(activeLead);
+                  setLeadModalOpen(true);
+                }}
+                className="px-3 py-1 bg-white border border-gray-300 hover:border-gray-900 text-gray-700 hover:text-gray-900 text-[12px] font-medium rounded-full flex items-center gap-1 shadow-xs transition-colors"
+              >
+                <Edit2 className="w-3 h-3 text-gray-500" />
+                <span>Edit Lead</span>
+              </button>
+              <button
+                onClick={() => setSelectedLeadId(null)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="p-5 space-y-5 flex-1">

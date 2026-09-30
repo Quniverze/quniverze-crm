@@ -42,6 +42,24 @@ export interface Lead {
   updated_at: string;
 }
 
+export type ProjectCategory = 'Sales' | 'Design' | 'Tech' | 'Meeting' | 'Operations';
+export type ProjectStatus = 'Running' | 'Ended' | 'Pending';
+
+export interface Project {
+  id: string;
+  title: string;
+  client_name?: string;
+  lead_id?: string;
+  category: ProjectCategory;
+  status: ProjectStatus;
+  budget_revenue?: number;
+  due_date: string; // YYYY-MM-DD
+  assigned_to?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type ActivityType = 'call' | 'note' | 'stage_change';
 
 export interface Activity {

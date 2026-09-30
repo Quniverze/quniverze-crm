@@ -182,6 +182,145 @@ export function FollowUpsView() {
         </div>
       </div>
 
+      {/* ========================================================
+          Month Calendar & Monthly Tasks (Exact match to reference)
+          ======================================================== */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+        {/* Month Calendar Card */}
+        <div className="md:col-span-6 bg-white border border-[#EAECEF] rounded-[22px] p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[14px] font-bold text-[#111827]">May, 2025</span>
+            <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+              <Calendar className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1.5 text-center">
+            {/* Weekdays */}
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <span key={d} className="text-[11px] font-semibold text-gray-400 py-1">
+                {d}
+              </span>
+            ))}
+
+            {/* Past month filler in soft sage */}
+            {['27', '28', '29', '30'].map((d) => (
+              <div
+                key={d}
+                className="w-8 h-8 mx-auto rounded-full bg-[#AAB89F]/30 text-[#274030] flex items-center justify-center text-[12px] font-medium"
+              >
+                {d}
+              </div>
+            ))}
+
+            {/* Current month days */}
+            {['01', '02', '03'].map((d) => (
+              <div
+                key={d}
+                className="w-8 h-8 mx-auto rounded-full text-gray-700 flex items-center justify-center text-[12px] font-medium hover:bg-gray-100 cursor-pointer"
+              >
+                {d}
+              </div>
+            ))}
+
+            {['04', '05', '06', '07', '08', '09', '10'].map((d) => (
+              <div
+                key={d}
+                className="w-8 h-8 mx-auto rounded-full text-gray-700 flex items-center justify-center text-[12px] font-medium hover:bg-gray-100 cursor-pointer"
+              >
+                {d}
+              </div>
+            ))}
+
+            {/* Active Day 16 highlighted in Neon Lime */}
+            {['11', '12', '13', '14', '15'].map((d) => (
+              <div
+                key={d}
+                className="w-8 h-8 mx-auto rounded-full text-gray-700 flex items-center justify-center text-[12px] font-medium hover:bg-gray-100 cursor-pointer"
+              >
+                {d}
+              </div>
+            ))}
+
+            <div className="w-8 h-8 mx-auto rounded-xl bg-[#D8F231] text-[#132A1C] font-bold flex items-center justify-center text-[12.5px] shadow-xs cursor-pointer ring-2 ring-[#132A1C]">
+              16
+            </div>
+
+            {['17', '18', '19', '20', '21', '22', '23', '24'].map((d) => (
+              <div
+                key={d}
+                className="w-8 h-8 mx-auto rounded-full text-gray-700 flex items-center justify-center text-[12px] font-medium hover:bg-gray-100 cursor-pointer"
+              >
+                {d}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Monthly Tasks Timeline Slots */}
+        <div className="md:col-span-6 bg-white border border-[#EAECEF] rounded-[22px] p-5 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[14px] font-bold text-[#111827]">Monthly Tasks</span>
+            <button
+              onClick={() => {
+                const first = activeLeads[0];
+                if (first) handleStartCall(first);
+              }}
+              className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-gray-900 transition-colors"
+            >
+              +
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* 16 May, Friday */}
+            <div className="p-3 bg-[#F8FAFC] border border-gray-200/80 rounded-2xl flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[20px] font-bold text-gray-900 leading-none block">16</span>
+                <span className="text-[10.5px] font-medium text-gray-500">May, Friday</span>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <div className="px-3 py-1.5 bg-gray-200/70 text-gray-800 text-[11px] font-semibold rounded-xl shrink-0">
+                  <span className="text-[9px] font-mono opacity-70 block">9 AM</span>
+                  <span>Hostel Demo</span>
+                </div>
+                <div className="px-3 py-1.5 bg-[#D8F231] text-[#132A1C] text-[11px] font-bold rounded-xl shrink-0">
+                  <span className="text-[9px] font-mono opacity-70 block">6 PM</span>
+                  <span>Design Pitch</span>
+                </div>
+                <div className="w-8 h-8 rounded-xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400 shrink-0">
+                  +
+                </div>
+              </div>
+            </div>
+
+            {/* 17 May, Saturday */}
+            <div className="p-3 bg-[#F8FAFC] border border-gray-200/80 rounded-2xl flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[20px] font-bold text-gray-900 leading-none block">17</span>
+                <span className="text-[10.5px] font-medium text-gray-500">May, Saturday</span>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <div className="px-3 py-1.5 bg-gray-200/70 text-gray-800 text-[11px] font-semibold rounded-xl shrink-0">
+                  <span className="text-[9px] font-mono opacity-70 block">10 AM</span>
+                  <span>Contract Review</span>
+                </div>
+                <div className="px-3 py-1.5 bg-[#AAB89F] text-[#132A1C] text-[11px] font-bold rounded-xl shrink-0">
+                  <span className="text-[9px] font-mono opacity-70 block">2 PM</span>
+                  <span>NivaOps Deploy</span>
+                </div>
+                <div className="w-8 h-8 rounded-xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400 shrink-0">
+                  +
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Main Queues */}
       {fullDialQueue.length === 0 ? (
         <div className="p-12 text-center bg-white border border-[#EAECEF] rounded-[22px] shadow-xs">

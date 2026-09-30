@@ -21,13 +21,17 @@ import {
 export function TodayView() {
   const {
     leads,
+    projects,
+    setProjectModalOpen,
+    setEditingProject,
+    deleteProject,
     usersList,
     currentUser,
     setQuickAddOpen,
     setTeamModalOpen,
     setSelectedLeadId,
     setCurrentView,
-    logCall,
+    addActivity,
     showToast
   } = useCRM();
 
@@ -54,14 +58,14 @@ export function TodayView() {
       .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Metrics from real database
-  const totalLeadsCount = leads.length > 0 ? leads.length : 24;
-  const wonDealsCount = leads.filter((l) => l.stage === 'Won').length || 10;
-  const runningDealsCount =
-    leads.filter((l) => ['Qualified', 'Discovery', 'Proposal', 'Negotiation'].includes(l.stage)).length || 12;
+  // Metrics from real projects and leads
+  const totalProjectsCount = projects.length > 0 ? projects.length : 24;
+  const endedProjectsCount = projects.filter((p) => p.status === 'Ended').length || 10;
+  const runningProjectsCount = projects.filter((p) => p.status === 'Running').length || 12;
+  const pendingProjectsCount = projects.filter((p) => p.status === 'Pending').length || 2;
+  const endedProgressPct = projects.length > 0 ? Math.round((endedProjectsCount / projects.length) * 100) : 41;
+
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const pendingCount =
-    leads.filter((l) => l.next_action_due && l.next_action_due <= todayStr && l.stage !== 'Won' && l.stage !== 'Lost').length || 2;
 
   // Next reminder / follow-up
   const upcomingLead = leads.find((l) => l.next_action) || {
@@ -73,24 +77,13 @@ export function TodayView() {
     next_action_due: todayStr
   };
 
-  // Top deals list (real or aesthetic fallback)
-  const topDeals = useMemo(() => {
-    if (leads.length > 0) {
-      return leads.slice(0, 5).map((l, idx) => ({
-        id: l.id,
-        title: l.business_name,
-        due: l.next_action_due ? `Due date: ${l.next_action_due}` : 'Due date: Nov 28, 2026',
-        iconType: idx % 5
-      }));
+  const handleStartMeeting = () => {
+    if (upcomingLead.id && upcomingLead.id !== 'lead_demo_1') {
+      addActivity(upcomingLead.id, 'call', `Started virtual meeting with ${upcomingLead.business_name} (${upcomingLead.contact_name})`);
     }
-    return [
-      { id: '1', title: 'Develop API Endpoints', due: 'Due date: Nov 26, 2026', iconType: 0 },
-      { id: '2', title: 'Onboarding Flow', due: 'Due date: Nov 28, 2026', iconType: 1 },
-      { id: '3', title: 'Build Dashboard', due: 'Due date: Nov 30, 2026', iconType: 2 },
-      { id: '4', title: 'Optimize Page Load', due: 'Due date: Dec 5, 2026', iconType: 3 },
-      { id: '5', title: 'Cross-Browser Testing', due: 'Due date: Dec 6, 2026', iconType: 4 },
-    ];
-  }, [leads]);
+    showToast(`Starting meeting with ${upcomingLead.business_name}...`);
+    window.open('https://meet.google.com/new', '_blank');
+  };
 
   // Team Collaboration List
   const teamCollabList = useMemo(() => {
@@ -104,22 +97,13 @@ export function TodayView() {
     if (usersList && usersList.length > 0) {
       return usersList.slice(0, 4).map((u, i) => ({
         name: u.name,
-        task: i === 0 ? 'Working on Lead Pipeline & Operations' : `Assigned to ${leads[i]?.business_name || 'NivaOps SaaS Client'}`,
+        task: i === 0 ? 'Working on Lead Pipeline & Operations' : `Assigned to ${leads[i]?.business_name || projects[i]?.title || 'NivaOps SaaS Client'}`,
         status: i === 0 ? 'Completed' : i === 1 ? 'In Progress' : 'Pending',
         avatarBg: baseNames[i % 4].avatarBg
       }));
     }
     return baseNames;
-  }, [usersList, leads]);
-
-  const handleOpenLead = (id: string) => {
-    if (leads.some((l) => l.id === id)) {
-      setSelectedLeadId(id);
-      setCurrentView('leads');
-    } else {
-      setCurrentView('leads');
-    }
-  };
+  }, [usersList, leads, projects]);
 
   return (
     <div className="space-y-6 pt-2 max-w-7xl mx-auto">
@@ -139,7 +123,10 @@ export function TodayView() {
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setQuickAddOpen(true)}
+            onClick={() => {
+              setEditingProject(null);
+              setProjectModalOpen(true);
+            }}
             className="inline-flex items-center gap-2 bg-[#1A5336] hover:bg-[#14422B] text-white font-medium text-[13px] px-5 py-2.5 rounded-full transition-all shadow-xs"
           >
             <Plus className="w-4 h-4" />
@@ -147,10 +134,11 @@ export function TodayView() {
           </button>
 
           <button
-            onClick={() => setCurrentView('leads')}
+            onClick={() => setQuickAddOpen(true)}
             className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-[#111827] border border-gray-300 font-medium text-[13px] px-5 py-2.5 rounded-full transition-all shadow-xs"
           >
-            <span>Import Data</span>
+            <Plus className="w-4 h-4 text-gray-500" />
+            <span>Add Lead</span>
           </button>
         </div>
       </div>
@@ -169,7 +157,7 @@ export function TodayView() {
           </div>
 
           <div className="my-2">
-            <span className="text-[34px] font-bold tracking-tight">{totalLeadsCount}</span>
+            <span className="text-[34px] font-bold tracking-tight">{totalProjectsCount}</span>
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px] text-white/80">
@@ -188,7 +176,7 @@ export function TodayView() {
           </div>
 
           <div className="my-2">
-            <span className="text-[34px] font-bold text-[#111827] tracking-tight">{wonDealsCount}</span>
+            <span className="text-[34px] font-bold text-[#111827] tracking-tight">{endedProjectsCount}</span>
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
@@ -207,7 +195,7 @@ export function TodayView() {
           </div>
 
           <div className="my-2">
-            <span className="text-[34px] font-bold text-[#111827] tracking-tight">{runningDealsCount}</span>
+            <span className="text-[34px] font-bold text-[#111827] tracking-tight">{runningProjectsCount}</span>
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
@@ -226,7 +214,7 @@ export function TodayView() {
           </div>
 
           <div className="my-2">
-            <span className="text-[34px] font-bold text-[#111827] tracking-tight">{pendingCount}</span>
+            <span className="text-[34px] font-bold text-[#111827] tracking-tight">{pendingProjectsCount}</span>
           </div>
 
           <div className="text-[11px] text-[#6B7280]">
@@ -338,19 +326,14 @@ export function TodayView() {
             </div>
           </div>
 
-          <a
-            href={`tel:${upcomingLead.phone}`}
-            onClick={(e) => {
-              if (!upcomingLead.phone) {
-                e.preventDefault();
-                showToast('Initiating call...');
-              }
-            }}
+          <button
+            type="button"
+            onClick={handleStartMeeting}
             className="w-full py-3 bg-[#1A5336] hover:bg-[#14422B] text-white text-[13px] font-medium rounded-full flex items-center justify-center gap-2 transition-all shadow-xs mt-4"
           >
             <Video className="w-4 h-4 fill-white" />
             <span>Start Meeting</span>
-          </a>
+          </button>
         </div>
 
         {/* Right: Project List Card */}
@@ -358,58 +341,78 @@ export function TodayView() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-[14px] font-bold text-[#111827]">Project</span>
             <button
-              onClick={() => setQuickAddOpen(true)}
+              onClick={() => {
+                setEditingProject(null);
+                setProjectModalOpen(true);
+              }}
               className="text-[11.5px] font-semibold text-gray-700 px-2.5 py-1 border border-gray-200 rounded-full hover:border-gray-900 transition-colors"
             >
               + New
             </button>
           </div>
 
-          <div className="space-y-3">
-            {topDeals.map((deal) => (
+          <div className="space-y-2.5">
+            {projects.slice(0, 5).map((proj, idx) => (
               <div
-                key={deal.id}
-                onClick={() => handleOpenLead(deal.id)}
-                className="flex items-center gap-3 cursor-pointer group"
+                key={proj.id}
+                onClick={() => {
+                  setEditingProject(proj);
+                  setProjectModalOpen(true);
+                }}
+                className="flex items-center justify-between p-1.5 rounded-xl hover:bg-gray-50 cursor-pointer group transition-colors"
               >
-                {/* Custom colorful geometric icons matching screenshot */}
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
-                  {deal.iconType === 0 && (
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <div className="w-1.5 h-4 bg-blue-600 rotate-45 rounded-full mr-1" />
-                      <div className="w-1.5 h-4 bg-blue-600 rotate-45 rounded-full" />
-                    </div>
-                  )}
-                  {deal.iconType === 1 && (
-                    <div className="w-5 h-5 rounded-full border-2 border-teal-500 border-t-transparent" />
-                  )}
-                  {deal.iconType === 2 && (
-                    <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
-                      <div className="bg-amber-400 rounded-xs" />
-                      <div className="bg-emerald-400 rounded-xs" />
-                      <div className="bg-rose-400 rounded-xs" />
-                      <div className="bg-blue-400 rounded-xs" />
-                    </div>
-                  )}
-                  {deal.iconType === 3 && (
-                    <div className="w-4 h-4 rounded-full bg-amber-500" />
-                  )}
-                  {deal.iconType === 4 && (
-                    <div className="w-4 h-4 flex items-center justify-center gap-0.5">
-                      <span className="w-2 h-2 rounded-full bg-indigo-600" />
-                      <span className="w-2 h-2 rounded-full bg-purple-600" />
-                    </div>
-                  )}
-                </div>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {/* Custom colorful geometric icons matching screenshot */}
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0">
+                    {idx % 5 === 0 && (
+                      <div className="w-6 h-6 flex items-center justify-center">
+                        <div className="w-1.5 h-4 bg-blue-600 rotate-45 rounded-full mr-1" />
+                        <div className="w-1.5 h-4 bg-blue-600 rotate-45 rounded-full" />
+                      </div>
+                    )}
+                    {idx % 5 === 1 && (
+                      <div className="w-5 h-5 rounded-full border-2 border-teal-500 border-t-transparent" />
+                    )}
+                    {idx % 5 === 2 && (
+                      <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
+                        <div className="bg-amber-400 rounded-xs" />
+                        <div className="bg-emerald-400 rounded-xs" />
+                        <div className="bg-rose-400 rounded-xs" />
+                        <div className="bg-blue-400 rounded-xs" />
+                      </div>
+                    )}
+                    {idx % 5 === 3 && (
+                      <div className="w-4 h-4 rounded-full bg-amber-500" />
+                    )}
+                    {idx % 5 === 4 && (
+                      <div className="w-4 h-4 flex items-center justify-center gap-0.5">
+                        <span className="w-2 h-2 rounded-full bg-indigo-600" />
+                        <span className="w-2 h-2 rounded-full bg-purple-600" />
+                      </div>
+                    )}
+                  </div>
 
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-[13px] font-semibold text-[#111827] truncate group-hover:text-[#1A5336] transition-colors">
-                    {deal.title}
-                  </h4>
-                  <div className="text-[11px] text-[#9CA3AF]">
-                    {deal.due}
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-[13px] font-semibold text-[#111827] truncate group-hover:text-[#1A5336] transition-colors">
+                      {proj.title}
+                    </h4>
+                    <div className="text-[11px] text-[#9CA3AF]">
+                      Due date: {proj.due_date}
+                    </div>
                   </div>
                 </div>
+
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${
+                    proj.status === 'Ended'
+                      ? 'bg-gray-100 text-gray-600 border-gray-200'
+                      : proj.status === 'Running'
+                      ? 'bg-emerald-50 text-[#1A5336] border-emerald-200 font-semibold'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}
+                >
+                  {proj.status}
+                </span>
               </div>
             ))}
           </div>
@@ -500,7 +503,7 @@ export function TodayView() {
             {/* Center Gauge Value */}
             <div className="absolute bottom-1 text-center">
               <div className="text-[26px] font-bold text-[#111827] leading-none">
-                41%
+                {endedProgressPct}%
               </div>
               <div className="text-[11px] text-[#6B7280] font-medium mt-0.5">
                 Project Ended
