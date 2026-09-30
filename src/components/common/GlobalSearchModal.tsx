@@ -56,47 +56,47 @@ export function GlobalSearchModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-[#12151C]/50 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/40 backdrop-blur-xs p-4"
       onClick={() => setSearchOpen(false)}
     >
       <div
-        className="w-full max-w-xl bg-white border border-[#E5E7EB] shadow-2xl overflow-hidden"
+        className="w-full max-w-xl bg-white border border-gray-100 rounded-[28px] shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3 border-b border-[#E5E7EB]">
-          <Search className="w-4 h-4 text-[#12151C]/40 mr-3 shrink-0" />
+        <div className="flex items-center px-5 py-4 border-b border-[#EAECEF]">
+          <Search className="w-5 h-5 text-gray-400 mr-3 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search business name, contact person, or phone number..."
-            className="flex-1 text-[14px] text-[#12151C] bg-transparent focus:outline-none"
+            className="flex-1 text-[14.5px] text-[#111827] bg-transparent focus:outline-none"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="p-1 text-[#12151C]/40 hover:text-[#12151C]"
+              className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
-          <span className="ml-2 px-1.5 py-0.5 text-[10px] font-mono text-[#12151C]/50 border border-[#E5E7EB]">
+          <span className="ml-2 px-2 py-0.5 text-[10.5px] font-mono text-gray-400 bg-gray-50 border border-gray-200 rounded-md">
             ESC
           </span>
         </div>
 
         {/* Results */}
-        <div className="max-h-80 overflow-y-auto divide-y divide-[#E5E7EB]">
+        <div className="max-h-80 overflow-y-auto divide-y divide-[#EAECEF]">
           {query.trim() && results.length === 0 && (
-            <div className="p-8 text-center text-[13px] text-[#12151C]/50">
+            <div className="p-8 text-center text-[13px] text-gray-400">
               No matching prospects or contacts found.
             </div>
           )}
 
           {!query.trim() && (
-            <div className="p-6 text-center text-[12px] text-[#12151C]/50">
+            <div className="p-6 text-center text-[12.5px] text-gray-400">
               Type to search across all leads in Product (NivaOps) and Client Work.
             </div>
           )}
@@ -105,21 +105,21 @@ export function GlobalSearchModal() {
             <div
               key={lead.id}
               onClick={() => handleSelect(lead.id)}
-              className="p-3.5 hover:bg-[#F4F6F9] cursor-pointer transition-colors flex items-center justify-between"
+              className="p-4 hover:bg-[#F8FAF9] cursor-pointer transition-colors flex items-center justify-between"
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1 text-[#12151C]">
+                  <span className="text-[10px] font-mono uppercase bg-[#E8F5EE] text-[#1A5336] px-2 py-0.5 rounded-full font-bold">
                     {lead.type}
                   </span>
-                  <span className="text-[10px] font-mono border border-[#E5E7EB] px-1 text-[#12151C]/70">
+                  <span className="text-[10px] font-mono bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full text-gray-600">
                     {lead.stage}
                   </span>
-                  <span className="text-[13.5px] font-bold text-[#12151C] truncate">
+                  <span className="text-[14px] font-bold text-[#111827] truncate">
                     {lead.business_name}
                   </span>
                 </div>
-                <div className="text-[12px] text-[#12151C]/70 mt-0.5 flex items-center gap-2">
+                <div className="text-[12px] text-gray-500 mt-1 flex items-center gap-2">
                   <span>{lead.contact_name}</span>
                   <span>•</span>
                   <span className="font-mono">{lead.phone}</span>
@@ -128,10 +128,10 @@ export function GlobalSearchModal() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[11px] font-mono text-[#12151C]/50">
+                <span className="text-[11px] font-mono text-gray-400">
                   {lead.assigned_to}
                 </span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#12151C]/40" />
+                <ArrowRight className="w-4 h-4 text-gray-400" />
               </div>
             </div>
           ))}

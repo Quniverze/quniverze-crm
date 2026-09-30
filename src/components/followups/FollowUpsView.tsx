@@ -13,8 +13,7 @@ import {
   MessageSquare,
   AlertTriangle,
   ChevronRight,
-  Sparkles,
-  HelpCircle
+  Sparkles
 } from 'lucide-react';
 
 export function FollowUpsView() {
@@ -126,44 +125,38 @@ export function FollowUpsView() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-5xl mx-auto w-full space-y-6">
+    <div className="space-y-6 pt-2 max-w-5xl mx-auto">
       {/* Header & Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E7EB] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono uppercase tracking-widest text-[#3B82F6]">
-              03 Execution
-            </span>
-            <span className="text-[#E5E7EB]">/</span>
-            <h1 className="text-[20px] font-bold text-[#12151C] tracking-tight">
-              Action Queue
-            </h1>
-          </div>
-          <p className="text-[13px] text-[#12151C]/60 mt-0.5">
-            Rapid touchpoint execution: overdue items, today&apos;s calls, and unassigned steps.
+          <h1 className="text-[28px] font-bold text-[#111827] tracking-tight">
+            Calendar &amp; Follow-ups
+          </h1>
+          <p className="text-[13.5px] text-[#6B7280] mt-0.5">
+            Rapid touchpoint execution: overdue items, today&apos;s calls, and upcoming schedule.
           </p>
         </div>
 
         {/* Filters Group: Scope + Type */}
-        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+        <div className="flex items-center gap-2">
           {/* Scope Toggle */}
-          <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
+          <div className="inline-flex p-1 bg-white border border-[#EAECEF] rounded-full shadow-xs">
             <button
               onClick={() => setScope('my')}
-              className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+              className={`px-4 py-1.5 text-[12px] font-medium rounded-full transition-colors ${
                 scope === 'my'
-                  ? 'bg-[#12151C] text-white shadow-sm'
-                  : 'text-[#12151C]/70 hover:text-[#12151C]'
+                  ? 'bg-[#1A5336] text-white shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               My Leads
             </button>
             <button
               onClick={() => setScope('all')}
-              className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+              className={`px-4 py-1.5 text-[12px] font-medium rounded-full transition-colors ${
                 scope === 'all'
-                  ? 'bg-[#12151C] text-white shadow-sm'
-                  : 'text-[#12151C]/70 hover:text-[#12151C]'
+                  ? 'bg-[#1A5336] text-white shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               All Team
@@ -171,18 +164,18 @@ export function FollowUpsView() {
           </div>
 
           {/* Type Filter */}
-          <div className="inline-flex p-1 bg-[#F4F6F9] border border-[#E5E7EB]">
+          <div className="inline-flex p-1 bg-white border border-[#EAECEF] rounded-full shadow-xs">
             {(['All', 'Product', 'Client Work'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`px-3 py-1.5 text-[12px] font-medium transition-colors ${
+                className={`px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-colors ${
                   typeFilter === t
-                    ? 'bg-[#12151C] text-white'
-                    : 'text-[#12151C]/70 hover:text-[#12151C]'
+                    ? 'bg-[#1A5336] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                {t === 'Product' ? 'Product (NivaOps)' : t}
+                {t === 'Product' ? 'Product' : t}
               </button>
             ))}
           </div>
@@ -191,10 +184,10 @@ export function FollowUpsView() {
 
       {/* Main Queues */}
       {fullDialQueue.length === 0 ? (
-        <div className="p-12 text-center bg-white border border-[#E5E7EB]">
-          <CheckCircle2 className="w-10 h-10 text-[#12151C]/30 mx-auto mb-3" />
-          <h3 className="text-[15px] font-semibold text-[#12151C]">Queue is clear</h3>
-          <p className="text-[12.5px] text-[#12151C]/60 mt-1 max-w-sm mx-auto">
+        <div className="p-12 text-center bg-white border border-[#EAECEF] rounded-[22px] shadow-xs">
+          <CheckCircle2 className="w-10 h-10 text-[#1A5336]/40 mx-auto mb-3" />
+          <h3 className="text-[16px] font-bold text-[#111827]">Queue is clear</h3>
+          <p className="text-[13px] text-gray-500 mt-1 max-w-sm mx-auto">
             No active follow-ups due. Leads with scheduled next actions will appear here automatically.
           </p>
         </div>
@@ -204,59 +197,48 @@ export function FollowUpsView() {
           {overdueLeads.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-[#12151C] text-white text-[11px] font-mono font-bold uppercase">
+                <span className="px-3 py-1 bg-rose-100 text-rose-700 text-[11px] font-bold rounded-full uppercase">
                   Overdue
                 </span>
-                <span className="text-[12px] font-mono text-[#12151C]/60">
+                <span className="text-[12.5px] text-gray-500">
                   ({overdueLeads.length} touchpoints needing immediate intervention)
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {overdueLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="p-4 bg-white border-2 border-[#12151C] flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 bg-white border border-rose-200 rounded-[20px] shadow-xs hover:border-[#1A5336] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
+                        <span className="text-[10px] font-mono uppercase bg-[#E8F5EE] text-[#1A5336] px-2 py-0.5 rounded-full">
                           {lead.type}
                         </span>
-                        <span className="text-[10px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
+                        <span className="text-[10px] font-mono uppercase bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
                           {lead.stage}
                         </span>
-                        <h3 className="text-[14.5px] font-bold text-[#12151C]">
+                        <h3 className="text-[15px] font-bold text-[#111827]">
                           {lead.business_name}
                         </h3>
-                        <span className="text-[12px] text-[#12151C]/70">
+                        <span className="text-[12.5px] text-gray-500">
                           ({lead.contact_name})
                         </span>
                       </div>
 
-                      <div className="text-[13px] text-[#12151C] font-semibold mt-1.5 flex items-center gap-1.5">
-                        <span className="text-[#3B82F6]">→</span>
+                      <div className="text-[13px] text-[#111827] font-semibold mt-1.5 flex items-center gap-1.5">
+                        <span className="text-[#1A5336]">→</span>
                         <span>{lead.next_action}</span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-[11px] text-[#12151C]/60 font-mono mt-1 flex-wrap">
-                        <span className="text-[#12151C] font-bold">
+                      <div className="flex items-center gap-3 text-[11px] text-gray-500 font-mono mt-1 flex-wrap">
+                        <span className="text-rose-600 font-bold">
                           Missed Date: {lead.next_action_due}
                         </span>
                         <span>•</span>
                         <span>Owner: {lead.assigned_to}</span>
-                        {lead.city && (
-                          <>
-                            <span>•</span>
-                            <span>{lead.city}</span>
-                          </>
-                        )}
-                        {lead.angle && (
-                          <>
-                            <span>•</span>
-                            <span className="italic text-[#12151C]/80">Angle: {lead.angle}</span>
-                          </>
-                        )}
+                        {lead.city && <span>• {lead.city}</span>}
                       </div>
                     </div>
 
@@ -265,14 +247,14 @@ export function FollowUpsView() {
                         href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C]"
+                        className="p-2.5 rounded-full border border-gray-200 hover:border-gray-800 text-gray-700 transition-colors"
                         title="Open WhatsApp"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </a>
                       <button
                         onClick={() => handleStartCall(lead)}
-                        className="px-4 py-2 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors flex items-center gap-1.5"
+                        className="btn-pill-primary text-[12px] py-2 px-4 shadow-xs"
                       >
                         <Phone className="w-3.5 h-3.5" />
                         <span>Log Call</span>
@@ -288,42 +270,39 @@ export function FollowUpsView() {
           {dueTodayLeads.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] text-[11px] font-mono font-bold uppercase">
+                <span className="px-3 py-1 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full uppercase">
                   Due Today
                 </span>
-                <span className="text-[12px] font-mono text-[#12151C]/60">
+                <span className="text-[12.5px] text-gray-500">
                   ({dueTodayLeads.length} touchpoints)
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {dueTodayLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="p-4 bg-white border border-[#E5E7EB] hover:border-[#12151C] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-4 bg-white border border-[#EAECEF] rounded-[20px] shadow-xs hover:border-[#1A5336] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
+                        <span className="text-[10px] font-mono uppercase bg-[#E8F5EE] text-[#1A5336] px-2 py-0.5 rounded-full">
                           {lead.type}
                         </span>
-                        <span className="text-[10px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 text-[#12151C]">
-                          {lead.stage}
-                        </span>
-                        <h3 className="text-[14px] font-bold text-[#12151C]">
+                        <h3 className="text-[15px] font-bold text-[#111827]">
                           {lead.business_name}
                         </h3>
-                        <span className="text-[12px] text-[#12151C]/70">
+                        <span className="text-[12.5px] text-gray-500">
                           ({lead.contact_name} • {lead.phone})
                         </span>
                       </div>
 
-                      <div className="text-[13px] text-[#12151C] font-medium mt-1.5 flex items-center gap-1.5">
-                        <span className="text-[#3B82F6]">→</span>
+                      <div className="text-[13px] text-[#111827] font-medium mt-1.5 flex items-center gap-1.5">
+                        <span className="text-[#1A5336]">→</span>
                         <span>{lead.next_action}</span>
                       </div>
 
-                      <div className="text-[11px] text-[#12151C]/60 font-mono mt-1">
+                      <div className="text-[11px] text-gray-500 font-mono mt-1">
                         Assigned to: {lead.assigned_to}
                       </div>
                     </div>
@@ -333,14 +312,14 @@ export function FollowUpsView() {
                         href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2 border border-[#E5E7EB] hover:border-[#12151C] text-[#12151C]"
+                        className="p-2.5 rounded-full border border-gray-200 hover:border-gray-800 text-gray-700 transition-colors"
                         title="Open WhatsApp"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </a>
                       <button
                         onClick={() => handleStartCall(lead)}
-                        className="px-4 py-2 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors flex items-center gap-1.5"
+                        className="btn-pill-primary text-[12px] py-2 px-4 shadow-xs"
                       >
                         <Phone className="w-3.5 h-3.5" />
                         <span>Log Call</span>
@@ -356,43 +335,43 @@ export function FollowUpsView() {
           {missingActionLeads.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-[#F4F6F9] border border-[#12151C] text-[#12151C] text-[11px] font-mono font-bold uppercase flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 text-[#3B82F6]" />
+                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-[11px] font-bold rounded-full uppercase flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-amber-500" />
                   <span>Missing Next Step</span>
                 </span>
-                <span className="text-[12px] font-mono text-[#12151C]/60">
+                <span className="text-[12.5px] text-gray-500">
                   ({missingActionLeads.length} leads with no scheduled follow-up)
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {missingActionLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="p-3.5 bg-white border border-[#E5E7EB] hover:border-[#12151C] flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]"
+                    className="p-4 bg-white border border-[#EAECEF] rounded-[20px] shadow-xs hover:border-[#1A5336] flex flex-col md:flex-row md:items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] px-1.5 py-0.5 border border-[#E5E7EB]">
+                        <span className="text-[10px] font-mono uppercase bg-[#E8F5EE] text-[#1A5336] px-2 py-0.5 rounded-full">
                           {lead.type}
                         </span>
-                        <span className="font-bold text-[#12151C]">
+                        <span className="font-bold text-[14.5px] text-[#111827]">
                           {lead.business_name}
                         </span>
-                        <span className="text-[11.5px] text-[#12151C]/60">
+                        <span className="text-[12px] text-gray-500">
                           ({lead.contact_name})
                         </span>
                       </div>
-                      <div className="text-[11.5px] text-[#12151C]/50 mt-1 italic">
-                        No follow-up action scheduled yet. Assign a step to keep this deal alive.
+                      <div className="text-[12px] text-gray-500 mt-1 italic">
+                        No follow-up action scheduled. Assign a step to keep this deal moving.
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleStartCall(lead)}
-                      className="px-3.5 py-1.5 bg-[#12151C] text-white text-[11.5px] font-medium hover:bg-[#3B82F6] self-end md:self-center shrink-0 flex items-center gap-1.5"
+                      className="btn-pill-primary text-[12px] py-2 px-4 shadow-xs self-end md:self-center shrink-0"
                     >
-                      <Phone className="w-3 h-3" />
+                      <Phone className="w-3.5 h-3.5" />
                       <span>Assign Next Step</span>
                     </button>
                   </div>
@@ -401,41 +380,41 @@ export function FollowUpsView() {
             </div>
           )}
 
-          {/* 4. UPCOMING SECTION */}
+          {/* 4. UPCOMING SCHEDULE */}
           {upcomingLeads.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] text-[11px] font-mono font-medium uppercase">
+                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-[11px] font-bold rounded-full uppercase">
                   Upcoming Schedule
                 </span>
-                <span className="text-[12px] font-mono text-[#12151C]/60">
+                <span className="text-[12.5px] text-gray-500">
                   ({upcomingLeads.length})
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {upcomingLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="p-3.5 bg-white border border-[#E5E7EB] flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]"
+                    className="p-4 bg-white border border-[#EAECEF] rounded-[20px] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono uppercase bg-[#F4F6F9] px-1.5 py-0.5 border border-[#E5E7EB]">
+                        <span className="text-[10px] font-mono uppercase bg-[#E8F5EE] text-[#1A5336] px-2 py-0.5 rounded-full">
                           {lead.type}
                         </span>
-                        <span className="font-bold text-[#12151C]">
+                        <span className="font-bold text-[14px] text-[#111827]">
                           {lead.business_name}
                         </span>
-                        <span className="text-[11.5px] text-[#12151C]/60">
+                        <span className="text-[12px] text-gray-500">
                           ({lead.contact_name})
                         </span>
                       </div>
-                      <div className="text-[12px] text-[#12151C]/80 mt-1 flex items-center gap-1.5">
-                        <span className="text-[#3B82F6]">→</span>
+                      <div className="text-[12.5px] text-gray-700 mt-1 flex items-center gap-1.5">
+                        <span className="text-[#1A5336]">→</span>
                         <span>{lead.next_action}</span>
                         {lead.next_action_due && (
-                          <span className="font-mono text-[10.5px] text-[#12151C]/60">
+                          <span className="font-mono text-[11px] text-gray-500">
                             (Due {lead.next_action_due})
                           </span>
                         )}
@@ -444,7 +423,7 @@ export function FollowUpsView() {
 
                     <button
                       onClick={() => handleStartCall(lead)}
-                      className="px-3 py-1.5 border border-[#E5E7EB] text-[#12151C] text-[11.5px] font-medium hover:border-[#12151C] self-end md:self-center shrink-0"
+                      className="px-4 py-2 border border-gray-300 text-gray-800 rounded-full text-[12px] font-medium hover:border-gray-900 transition-colors self-end md:self-center shrink-0"
                     >
                       Call / Log
                     </button>
@@ -459,43 +438,43 @@ export function FollowUpsView() {
       {/* ONE-CLICK CALL & OUTCOME MODAL */}
       {callingLead && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
           onClick={() => setCallingLead(null)}
         >
           <div
-            className="w-full max-w-lg bg-white border border-[#E5E7EB] shadow-2xl overflow-hidden"
+            className="w-full max-w-lg bg-white border border-gray-100 rounded-[28px] shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-4 border-b border-[#E5E7EB] bg-[#F4F6F9] flex items-center justify-between">
+            <div className="p-5 border-b border-gray-100 bg-[#FAFAFB] flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase bg-[#12151C] text-white px-1.5 py-0.5">
+                  <span className="text-[10px] font-mono uppercase bg-[#1A5336] text-white px-2 py-0.5 rounded-full">
                     {callingLead.type}
                   </span>
-                  <span className="text-[11px] font-mono text-[#12151C]/60">
+                  <span className="text-[11px] font-mono text-gray-500">
                     Assigned: {callingLead.assigned_to}
                   </span>
                 </div>
-                <h3 className="text-[15px] font-bold text-[#12151C] mt-1">
+                <h3 className="text-[16px] font-bold text-[#111827] mt-1">
                   {callingLead.business_name}
                 </h3>
               </div>
               <button
                 onClick={() => setCallingLead(null)}
-                className="p-1 text-[#12151C]/60 hover:text-[#12151C]"
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 space-y-4">
-              {/* Dial Button */}
+            <div className="p-6 space-y-5">
+              {/* Dial Buttons */}
               <div className="flex items-center gap-3">
                 <a
                   href={`tel:${callingLead.phone}`}
-                  className="flex-1 py-2.5 bg-[#12151C] text-white text-[13px] font-medium hover:bg-[#3B82F6] transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-[#1A5336] text-white text-[13px] font-medium rounded-full hover:bg-[#14422B] transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
                   <Phone className="w-4 h-4" />
                   <span>Call {callingLead.phone}</span>
@@ -504,7 +483,7 @@ export function FollowUpsView() {
                   href={`https://wa.me/${callingLead.phone.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-4 py-2.5 bg-white border border-[#E5E7EB] text-[#12151C] text-[13px] font-medium hover:border-[#12151C] flex items-center gap-1.5"
+                  className="px-5 py-3 bg-white border border-gray-300 text-gray-800 text-[13px] font-medium rounded-full hover:border-gray-900 flex items-center gap-1.5 shadow-xs"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>WhatsApp</span>
@@ -512,15 +491,15 @@ export function FollowUpsView() {
               </div>
 
               {callingLead.angle && (
-                <div className="p-2.5 bg-[#F4F6F9] border border-[#E5E7EB] text-[11.5px] text-[#12151C]">
-                  <span className="font-mono uppercase font-bold text-[#12151C]/60 mr-1.5">Angle:</span>
+                <div className="p-3 bg-[#F8FAF9] border border-[#1A5336]/20 rounded-xl text-[12px] text-gray-800">
+                  <span className="font-bold text-[#1A5336] mr-1.5">Angle:</span>
                   {callingLead.angle}
                 </div>
               )}
 
               {/* 8 Standardized Outcomes */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/70">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
                   Select Call Outcome *
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -542,10 +521,10 @@ export function FollowUpsView() {
                             setNextActionText('Send proposal or schedule demo');
                           }
                         }}
-                        className={`p-2 text-[11.5px] font-medium text-left border transition-colors ${
+                        className={`p-2.5 text-[11.5px] font-medium text-center rounded-xl border transition-colors ${
                           isSelected
-                            ? 'bg-[#12151C] text-white border-[#12151C]'
-                            : 'bg-white text-[#12151C] border-[#E5E7EB] hover:border-[#12151C]'
+                            ? 'bg-[#1A5336] text-white border-[#1A5336] shadow-xs'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-900'
                         }`}
                       >
                         {out}
@@ -556,9 +535,9 @@ export function FollowUpsView() {
               </div>
 
               {/* Next Action Text & Due Date */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/70">
+                  <label className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
                     Next Action Description
                   </label>
                   <input
@@ -566,43 +545,43 @@ export function FollowUpsView() {
                     value={nextActionText}
                     onChange={(e) => setNextActionText(e.target.value)}
                     placeholder="e.g. Follow up on proposal"
-                    className="w-full px-3 py-1.5 text-[12.5px] bg-[#F4F6F9] border border-[#E5E7EB] focus:outline-none"
+                    className="w-full px-3 py-2 text-[12.5px] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/70">
+                  <label className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
                     Due Date
                   </label>
                   <input
                     type="date"
                     value={nextActionDate}
                     onChange={(e) => setNextActionDate(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-[12px] font-mono bg-[#F4F6F9] border border-[#E5E7EB] focus:outline-none"
+                    className="w-full px-3 py-2 text-[12px] font-mono bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Quick timing shortcuts */}
-              <div className="flex items-center gap-1.5 text-[11px] font-mono">
-                <span className="text-[#12151C]/50">Quick timing:</span>
+              <div className="flex items-center gap-2 text-[11.5px] font-medium">
+                <span className="text-gray-400">Quick timing:</span>
                 <button
                   type="button"
                   onClick={() => handleQuickPresetDays(1)}
-                  className="px-2 py-0.5 border border-[#E5E7EB] hover:border-[#12151C]"
+                  className="px-3 py-1 border border-gray-200 rounded-full hover:border-gray-900"
                 >
                   Tomorrow
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickPresetDays(3)}
-                  className="px-2 py-0.5 border border-[#E5E7EB] hover:border-[#12151C]"
+                  className="px-3 py-1 border border-gray-200 rounded-full hover:border-gray-900"
                 >
                   3 Days
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickPresetDays(7)}
-                  className="px-2 py-0.5 border border-[#E5E7EB] hover:border-[#12151C]"
+                  className="px-3 py-1 border border-gray-200 rounded-full hover:border-gray-900"
                 >
                   1 Week
                 </button>
@@ -610,7 +589,7 @@ export function FollowUpsView() {
 
               {/* Call Note */}
               <div className="space-y-1">
-                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/70">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
                   Call Notes (Optional)
                 </label>
                 <input
@@ -618,30 +597,30 @@ export function FollowUpsView() {
                   value={callNotes}
                   onChange={(e) => setCallNotes(e.target.value)}
                   placeholder="e.g. Wants demo of hostel management module on Thursday..."
-                  className="w-full px-3 py-1.5 text-[12.5px] bg-[#F4F6F9] border border-[#E5E7EB] focus:outline-none"
+                  className="w-full px-3 py-2 text-[12.5px] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none"
                 />
               </div>
 
               {/* Actions: Save & Save & Next */}
-              <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-end gap-2">
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setCallingLead(null)}
-                  className="px-3.5 py-2 text-[12px] border border-[#E5E7EB] text-[#12151C]/70 hover:text-[#12151C]"
+                  className="px-4 py-2 text-[12.5px] border border-gray-200 text-gray-600 rounded-full hover:border-gray-900"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSaveCall(false)}
-                  className="px-4 py-2 border border-[#12151C] text-[#12151C] text-[12px] font-medium hover:bg-[#F4F6F9] transition-colors"
+                  className="px-5 py-2 border border-[#1A5336] text-[#1A5336] rounded-full text-[12.5px] font-medium hover:bg-[#E8F5EE] transition-colors"
                 >
                   Save Call
                 </button>
                 <button
                   type="button"
                   onClick={() => handleSaveCall(true)}
-                  className="px-4 py-2 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-colors flex items-center gap-1.5"
+                  className="px-5 py-2 bg-[#1A5336] text-white rounded-full text-[12.5px] font-medium hover:bg-[#14422B] transition-colors flex items-center gap-1.5 shadow-xs"
                 >
                   <span>Save &amp; Next</span>
                   <ArrowRight className="w-3.5 h-3.5" />
