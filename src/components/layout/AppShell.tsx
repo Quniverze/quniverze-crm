@@ -55,7 +55,7 @@ export function AppShell({ children }: AppShellProps) {
   ];
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C] font-sans antialiased">
+    <div className="flex flex-col h-[100dvh] w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C] font-sans antialiased">
       {/* Top Navigation Bar */}
       <header className="h-[52px] bg-white border-b border-[#E5E7EB] px-3 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-30 select-none">
         {/* Left: Wordmark & Navigation */}
@@ -100,11 +100,11 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         {/* Right: Search, User, Team, Primary Action, Logout - Strictly Uniform 32px (h-8) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Global Search Button */}
           <button
             onClick={() => setSearchOpen(true)}
-            className="h-8 px-3 rounded-md flex items-center gap-2 text-[12px] text-[#12151C]/60 hover:text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C]/40 transition-colors"
+            className="h-8 w-8 sm:w-auto px-0 sm:px-3 rounded-md flex items-center justify-center gap-2 text-[12px] text-[#12151C]/60 hover:text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] hover:border-[#12151C]/40 transition-colors shrink-0"
             title="Search leads, contacts, phones (⌘K)"
           >
             <Search className="w-3.5 h-3.5" />
