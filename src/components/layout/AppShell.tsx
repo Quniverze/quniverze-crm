@@ -28,9 +28,23 @@ export function AppShell({ children }: AppShellProps) {
     setTeamModalOpen,
     teamMembers,
     currentUser,
+    leads,
     logout,
     toast
   } = useCRM();
+
+  const actionNeededCount = React.useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return leads.filter((l) => {
+      if (l.stage === 'Won' || l.stage === 'Lost') return false;
+      if (currentUser?.role === 'member') {
+        if (l.assigned_to.toLowerCase() !== currentUser.name.toLowerCase()) return false;
+      }
+      const isNew = l.stage === 'New';
+      const isOverdue = l.next_action_due && l.next_action_due < today;
+      return isNew || isOverdue;
+    }).length;
+  }, [leads, currentUser]);
 
   const navItems: { view: CRMView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { view: 'today', label: 'Today', icon: Calendar },
@@ -74,6 +88,11 @@ export function AppShell({ children }: AppShellProps) {
                 >
                   <Icon className="w-3.5 h-3.5 opacity-80" />
                   <span>{item.label}</span>
+                  {item.view === 'today' && actionNeededCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[#3B82F6] text-white">
+                      {actionNeededCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -160,7 +179,14 @@ export function AppShell({ children }: AppShellProps) {
                   : 'text-[#12151C]/60 hover:text-[#12151C]'
               }`}
             >
-              <Icon className="w-4 h-4 mb-0.5" />
+              <div className="relative">
+                <Icon className="w-4 h-4 mb-0.5" />
+                {item.view === 'today' && actionNeededCount > 0 && (
+                  <span className="absolute -top-1 -right-2 px-1 text-[8.5px] font-mono font-bold bg-[#3B82F6] text-white rounded-full min-w-[14px] text-center">
+                    {actionNeededCount}
+                  </span>
+                )}
+              </div>
               <span>{item.label}</span>
             </button>
           );

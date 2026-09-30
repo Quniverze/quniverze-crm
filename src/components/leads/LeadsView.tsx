@@ -55,6 +55,7 @@ export function LeadsView() {
     getLeadActivities,
     addActivity,
     teamMembers,
+    currentUser,
     showToast
   } = useCRM();
 
@@ -62,8 +63,10 @@ export function LeadsView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'All' | LeadType>('All');
   const [stageFilter, setStageFilter] = useState<'All' | LeadStage>('All');
-  const [assignedFilter, setAssignedFilter] = useState<'All' | string>('All');
-  const [attentionFilter, setAttentionFilter] = useState<'All' | 'Overdue' | 'MissingAction'>('All');
+  const [assignedFilter, setAssignedFilter] = useState<'All' | string>(() => {
+    return currentUser?.role === 'member' ? currentUser.name : 'All';
+  });
+  const [attentionFilter, setAttentionFilter] = useState<'All' | 'Overdue' | 'MissingAction' | 'NewAssigned'>('All');
 
   // Inline note text
   const [noteText, setNoteText] = useState('');
@@ -91,6 +94,8 @@ export function LeadsView() {
         if (!lead.next_action_due || lead.next_action_due >= todayStr) return false;
       } else if (attentionFilter === 'MissingAction') {
         if (lead.next_action && lead.next_action_due) return false;
+      } else if (attentionFilter === 'NewAssigned') {
+        if (lead.stage !== 'New') return false;
       }
 
       if (searchQuery.trim()) {
@@ -241,6 +246,7 @@ export function LeadsView() {
               className="h-8 px-2.5 bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C] rounded-md focus:outline-none text-[12px]"
             >
               <option value="All">All Health</option>
+              <option value="NewAssigned">New Assigned (Needs Contact)</option>
               <option value="Overdue">Overdue Actions Only</option>
               <option value="MissingAction">Missing Next Step</option>
             </select>
@@ -317,11 +323,17 @@ export function LeadsView() {
 
                       {/* Line & Stage */}
                       <div className="col-span-2 flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]">
+                        {lead.stage === 'New' ? (
+                          <span className="text-[9.5px] font-mono font-bold bg-[#3B82F6] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            New Lead
+                          </span>
+                        ) : (
+                          <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]">
+                            {lead.stage}
+                          </span>
+                        )}
+                        <span className="text-[9.5px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]/70">
                           {lead.type === 'Product' ? 'Product' : 'Client'}
-                        </span>
-                        <span className="text-[9.5px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]/80">
-                          {lead.stage}
                         </span>
                       </div>
 

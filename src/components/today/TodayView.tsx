@@ -79,6 +79,15 @@ export function TodayView() {
     return stats;
   }, [activities]);
 
+  // Uncontacted new leads (Work assigned by admin that has not been contacted)
+  const uncontactedLeads = useMemo(() => {
+    return scopedLeads.filter((l) => {
+      if (l.stage !== 'New') return false;
+      const stat = leadActivityStats[l.id];
+      return !stat || stat.callCount === 0;
+    });
+  }, [scopedLeads, leadActivityStats]);
+
   // Overdue leads
   const overdueLeads = useMemo(() => {
     return scopedLeads.filter(
@@ -99,15 +108,6 @@ export function TodayView() {
         l.next_action_due === todayStr
     );
   }, [scopedLeads, todayStr]);
-
-  // Uncontacted new leads
-  const uncontactedLeads = useMemo(() => {
-    return scopedLeads.filter((l) => {
-      if (l.stage !== 'New') return false;
-      const stat = leadActivityStats[l.id];
-      return !stat || stat.callCount === 0;
-    });
-  }, [scopedLeads, leadActivityStats]);
 
   // Missing next action
   const missingActionLeads = useMemo(() => {
@@ -136,24 +136,55 @@ export function TodayView() {
     return scopedLeads.filter((l) => l.stage === 'Won').length;
   }, [scopedLeads]);
 
-  // Combined Agenda: Overdue first, then Today
+  // Combined Agenda: Uncontacted New Leads FIRST, then Overdue, then Today
+  // This guarantees staff members immediately see newly assigned work!
   const agendaList = useMemo(() => {
-    return [...overdueLeads, ...dueTodayLeads];
-  }, [overdueLeads, dueTodayLeads]);
+    const seen = new Set<string>();
+    const list: Lead[] = [];
+
+    // 1. Uncontacted leads (Admin assigned work requiring first outreach)
+    uncontactedLeads.forEach((l) => {
+      if (!seen.has(l.id)) {
+        seen.add(l.id);
+        list.push(l);
+      }
+    });
+
+    // 2. Overdue leads
+    overdueLeads.forEach((l) => {
+      if (!seen.has(l.id)) {
+        seen.add(l.id);
+        list.push(l);
+      }
+    });
+
+    // 3. Due today leads
+    dueTodayLeads.forEach((l) => {
+      if (!seen.has(l.id)) {
+        seen.add(l.id);
+        list.push(l);
+      }
+    });
+
+    return list;
+  }, [uncontactedLeads, overdueLeads, dueTodayLeads]);
+
+  // Total Action Needed count (New assigned uncontacted + Overdue + Missing step)
+  const totalActionNeeded = uncontactedLeads.length + overdueLeads.length;
 
   // Exceptions list
   const exceptionsList = useMemo(() => {
     const map = new Map<string, { lead: Lead; reasons: string[] }>();
 
-    overdueLeads.forEach((l) => {
-      map.set(l.id, { lead: l, reasons: [`Overdue (${l.next_action_due})`] });
+    uncontactedLeads.forEach((l) => {
+      map.set(l.id, { lead: l, reasons: ['New Assigned (Needs Contact)'] });
     });
 
-    uncontactedLeads.forEach((l) => {
+    overdueLeads.forEach((l) => {
       if (map.has(l.id)) {
-        map.get(l.id)!.reasons.push('Uncontacted New Lead');
+        map.get(l.id)!.reasons.push(`Overdue (${l.next_action_due})`);
       } else {
-        map.set(l.id, { lead: l, reasons: ['Uncontacted New Lead'] });
+        map.set(l.id, { lead: l, reasons: [`Overdue (${l.next_action_due})`] });
       }
     });
 
@@ -166,7 +197,7 @@ export function TodayView() {
     });
 
     return Array.from(map.values());
-  }, [overdueLeads, uncontactedLeads, missingActionLeads]);
+  }, [uncontactedLeads, overdueLeads, missingActionLeads]);
 
   // Recent team activities
   const recentActivities = useMemo(() => {
@@ -203,11 +234,17 @@ export function TodayView() {
             </span>
           </div>
           <p className="text-[12.5px] text-[#12151C]/60 mt-0.5">
-            {agendaList.length > 0
-              ? `${agendaList.length} action${agendaList.length === 1 ? '' : 's'} scheduled for ${
-                  scope === 'my' && currentUser ? currentUser.name : 'the team'
-                }.`
-              : 'All caught up. Zero overdue or pending follow-ups for today.'}
+            {uncontactedLeads.length > 0 ? (
+              <span className="text-[#12151C] font-medium">
+                {uncontactedLeads.length} new assigned {uncontactedLeads.length === 1 ? 'lead requires' : 'leads require'} initial contact.
+              </span>
+            ) : agendaList.length > 0 ? (
+              `${agendaList.length} action${agendaList.length === 1 ? '' : 's'} scheduled for ${
+                scope === 'my' && currentUser ? currentUser.name : 'the team'
+              }.`
+            ) : (
+              'All caught up. Zero overdue or pending follow-ups for today.'
+            )}
           </p>
         </div>
 
@@ -265,24 +302,30 @@ export function TodayView() {
         </div>
       </div>
 
-      {/* 2. Top 4 Metric Tiles (Bento Grid) with Refined Depth */}
+      {/* 2. Top 4 Metric Tiles (Bento Grid) - Highlights Action Needed and Assigned Work */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        {/* Tile 1: Overdue */}
+        {/* Tile 1: Action Needed (Combines New Assigned + Overdue so work is impossible to miss) */}
         <div
           onClick={() => setActiveTab('exceptions')}
           className="rounded-xl bg-white border border-[#E5E7EB] p-4.5 hover:border-[#12151C]/40 hover:shadow-[0_4px_12px_rgba(18,21,28,0.04)] transition-all cursor-pointer flex flex-col justify-between shadow-[0_1px_3px_rgba(18,21,28,0.02)] group"
         >
           <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50">
-            <span className="group-hover:text-[#12151C] transition-colors">Overdue</span>
-            <Clock className="w-3.5 h-3.5 text-[#12151C]/40 group-hover:text-[#12151C] transition-colors" />
+            <span className={totalActionNeeded > 0 ? 'text-[#3B82F6] font-bold' : 'group-hover:text-[#12151C] transition-colors'}>
+              Action Needed
+            </span>
+            <AlertCircle className={`w-3.5 h-3.5 ${totalActionNeeded > 0 ? 'text-[#3B82F6]' : 'text-[#12151C]/40'} transition-colors`} />
           </div>
           <div className="mt-2.5 text-[28px] font-mono font-semibold tracking-tight text-[#12151C]">
-            {overdueLeads.length}
+            {totalActionNeeded}
           </div>
           <div className="text-[11.5px] text-[#12151C]/60 mt-1 flex items-center justify-between">
-            <span>Requires action</span>
-            {overdueLeads.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-[#12151C]" />
+            <span>
+              {uncontactedLeads.length > 0
+                ? `${uncontactedLeads.length} new • ${overdueLeads.length} overdue`
+                : 'Requires attention'}
+            </span>
+            {totalActionNeeded > 0 && (
+              <span className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse" />
             )}
           </div>
         </div>
@@ -343,7 +386,7 @@ export function TodayView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left Tile (2 cols): Action List */}
         <div className="lg:col-span-2 rounded-xl bg-white border border-[#E5E7EB] p-4.5 md:p-5 flex flex-col space-y-4 shadow-[0_1px_3px_rgba(18,21,28,0.03)]">
-          {/* Tile Header with Uniform Subtabs */}
+          {/* Tile Header with Clear Numerical Badges (No more invisible blue marks) */}
           <div className="flex items-center justify-between pb-3.5 border-b border-[#E5E7EB]">
             <div className="inline-flex h-8 p-0.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg items-center">
               <button
@@ -367,9 +410,13 @@ export function TodayView() {
                     : 'text-[#12151C]/70 hover:text-[#12151C]'
                 }`}
               >
-                <span>Attention Needed</span>
-                {exceptionsList.length > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
+                <span>Action Needed</span>
+                {exceptionsList.length > 0 ? (
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-[#3B82F6] text-white">
+                    {exceptionsList.length}
+                  </span>
+                ) : (
+                  <span className="font-mono text-[10.5px] opacity-75">(0)</span>
                 )}
               </button>
             </div>
@@ -384,7 +431,43 @@ export function TodayView() {
           </div>
 
           {/* Action List Content */}
-          <div className="flex-1">
+          <div className="flex-1 space-y-3">
+            {/* Prominent High-Visibility Callout when Admin has assigned uncontacted leads */}
+            {uncontactedLeads.length > 0 && activeTab === 'agenda' && (
+              <div className="rounded-xl bg-[#12151C] text-white p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#3B82F6] text-white flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13.5px] font-semibold text-white">
+                        {uncontactedLeads.length === 1
+                          ? '1 New Lead Assigned'
+                          : `${uncontactedLeads.length} New Leads Assigned`}
+                      </span>
+                      <span className="text-[9.5px] font-mono uppercase bg-[#3B82F6] text-white px-2 py-0.5 rounded font-bold">
+                        Action Needed
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-white/70 mt-0.5">
+                      Work assigned by admin requiring initial contact and outreach.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedLeadId(uncontactedLeads[0].id);
+                    setCurrentView('leads');
+                  }}
+                  className="h-8 px-3.5 bg-white text-[#12151C] text-[12px] font-medium hover:bg-[#F4F6F9] transition-colors rounded-lg flex items-center gap-1.5 shrink-0 shadow-xs"
+                >
+                  <span>Open First Lead</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#3B82F6]" />
+                </button>
+              </div>
+            )}
+
             {activeTab === 'agenda' ? (
               agendaList.length === 0 ? (
                 <div className="py-14 text-center rounded-lg bg-[#F4F6F9]/50 border border-dashed border-[#E5E7EB]">
@@ -393,28 +476,37 @@ export function TodayView() {
                     All caught up for today
                   </h4>
                   <p className="text-[12px] text-[#12151C]/50 mt-0.5">
-                    No overdue actions or follow-ups scheduled for today.
+                    No newly assigned leads or overdue follow-ups for today.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {agendaList.map((lead) => {
+                    const isNewUncontacted = uncontactedLeads.some((l) => l.id === lead.id);
                     const isOverdue = lead.next_action_due && lead.next_action_due < todayStr;
                     return (
                       <div
                         key={lead.id}
                         onClick={() => handleOpenLead(lead.id)}
-                        className="rounded-lg border border-[#E5E7EB] p-3.5 hover:bg-[#F4F6F9]/70 hover:border-[#12151C]/30 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-[0_1px_2px_rgba(18,21,28,0.02)]"
+                        className={`rounded-lg border p-3.5 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group shadow-[0_1px_2px_rgba(18,21,28,0.02)] ${
+                          isNewUncontacted
+                            ? 'border-[#3B82F6]/50 bg-[#F4F6F9]/40 hover:bg-[#F4F6F9]'
+                            : 'border-[#E5E7EB] hover:bg-[#F4F6F9]/70 hover:border-[#12151C]/30'
+                        }`}
                       >
                         <div className="min-w-0 space-y-1.5 flex-1">
                           {/* Top Tag Row */}
                           <div className="flex items-center gap-2 flex-wrap">
-                            {isOverdue ? (
-                              <span className="text-[9.5px] font-mono font-bold bg-[#12151C] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            {isNewUncontacted ? (
+                              <span className="text-[9.5px] font-mono font-bold bg-[#3B82F6] text-white px-2 py-0.5 rounded uppercase tracking-wider">
+                                New Assigned
+                              </span>
+                            ) : isOverdue ? (
+                              <span className="text-[9.5px] font-mono font-bold bg-[#12151C] text-white px-2 py-0.5 rounded uppercase tracking-wider">
                                 Overdue
                               </span>
                             ) : (
-                              <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C] font-semibold">
+                              <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-2 py-0.5 rounded text-[#12151C] font-semibold">
                                 Today
                               </span>
                             )}
@@ -431,8 +523,12 @@ export function TodayView() {
 
                           {/* Next Action Pill */}
                           <div className="inline-flex items-center gap-1.5 text-[12px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] px-2.5 py-1 rounded-md max-w-full">
-                            <span className="text-[#3B82F6] font-bold">→</span>
-                            <span className="truncate font-medium">{lead.next_action || 'Follow up call'}</span>
+                            <span className="text-[#3B82F6] font-bold">{isNewUncontacted ? '⚡' : '→'}</span>
+                            <span className="truncate font-medium">
+                              {isNewUncontacted
+                                ? lead.next_action || 'New assignment — Make initial contact'
+                                : lead.next_action || 'Follow up call'}
+                            </span>
                             {lead.next_action_due && (
                               <span className="text-[10px] font-mono text-[#12151C]/50 shrink-0 ml-1">
                                 ({lead.next_action_due})
@@ -471,12 +567,12 @@ export function TodayView() {
                 </div>
               )
             ) : (
-              /* Attention Needed Tab */
+              /* Action Needed Tab */
               exceptionsList.length === 0 ? (
                 <div className="py-14 text-center rounded-lg bg-[#F4F6F9]/50 border border-dashed border-[#E5E7EB]">
                   <CheckCircle2 className="w-8 h-8 text-[#12151C]/25 mx-auto mb-2.5" />
                   <h4 className="text-[14px] font-semibold text-[#12151C]">
-                    Zero exceptions
+                    Zero action items pending
                   </h4>
                   <p className="text-[12px] text-[#12151C]/50 mt-0.5">
                     All leads have active scheduled next steps and are up to date.
@@ -503,7 +599,11 @@ export function TodayView() {
                           {reasons.map((r) => (
                             <span
                               key={r}
-                              className="text-[10px] font-mono px-2 py-0.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded text-[#12151C] font-semibold"
+                              className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                                r.includes('New Assigned')
+                                  ? 'bg-[#3B82F6] text-white'
+                                  : 'bg-[#F4F6F9] border border-[#E5E7EB] text-[#12151C]'
+                              }`}
                             >
                               {r}
                             </span>
@@ -522,7 +622,7 @@ export function TodayView() {
                           }}
                           className="h-8 px-3.5 rounded-lg bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] transition-all shadow-xs active:scale-[0.98]"
                         >
-                          Resolve
+                          Take Action
                         </button>
                       </div>
                     </div>
