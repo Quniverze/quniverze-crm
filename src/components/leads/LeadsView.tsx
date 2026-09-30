@@ -180,7 +180,13 @@ export function LeadsView() {
     return Array.from(set).filter(Boolean);
   }, [teamMembers, activeLead?.assigned_to, currentUser?.name]);
 
+  const isAdmin = currentUser?.role === 'admin';
+
   const handleReassign = (newAssignee: string) => {
+    if (!isAdmin) {
+      showToast('Only admins can reassign leads');
+      return;
+    }
     if (!activeLead || !newAssignee || activeLead.assigned_to === newAssignee) return;
     const oldAssignee = activeLead.assigned_to || 'Unassigned';
     updateLead(activeLead.id, { assigned_to: newAssignee });
@@ -669,26 +675,38 @@ export function LeadsView() {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block flex items-center justify-between">
-                  <span>Assigned Rep</span>
-                  <span className="text-[10px] text-[#3B82F6] font-sans font-medium">Reassign</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={activeLead.assigned_to}
-                    onChange={(e) => handleReassign(e.target.value)}
-                    className="w-full h-8 pl-7 pr-2 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
-                  >
-                    {assigneeOptions.map((member) => (
-                      <option key={member} value={member}>
-                        {member}
-                      </option>
-                    ))}
-                  </select>
-                  <UserCheck className="w-3.5 h-3.5 text-[#3B82F6] absolute left-2 top-2.5 pointer-events-none" />
+              {isAdmin ? (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block flex items-center justify-between">
+                    <span>Assigned Rep</span>
+                    <span className="text-[10px] text-[#3B82F6] font-sans font-medium">Reassign</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={activeLead.assigned_to}
+                      onChange={(e) => handleReassign(e.target.value)}
+                      className="w-full h-8 pl-7 pr-2 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
+                    >
+                      {assigneeOptions.map((member) => (
+                        <option key={member} value={member}>
+                          {member}
+                        </option>
+                      ))}
+                    </select>
+                    <UserCheck className="w-3.5 h-3.5 text-[#3B82F6] absolute left-2 top-2.5 pointer-events-none" />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block">
+                    Assigned Rep
+                  </label>
+                  <div className="h-8 px-2.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded-md flex items-center gap-1.5 text-[12px] font-mono text-[#12151C]/80">
+                    <UserIcon className="w-3.5 h-3.5 text-[#12151C]/40" />
+                    <span className="truncate">{activeLead.assigned_to}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 4. Est. Value & Category - Uniform 32px (h-8) */}

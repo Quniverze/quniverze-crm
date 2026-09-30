@@ -6,14 +6,27 @@ import { LeadType, LeadStage } from '@/types/crm';
 import { X, Sparkles } from 'lucide-react';
 
 export function QuickAddLeadModal() {
-  const { quickAddOpen, setQuickAddOpen, addLead, setSelectedLeadId, setCurrentView, teamMembers } = useCRM();
+  const {
+    quickAddOpen,
+    setQuickAddOpen,
+    addLead,
+    setSelectedLeadId,
+    setCurrentView,
+    teamMembers,
+    currentUser
+  } = useCRM();
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const [businessName, setBusinessName] = useState('');
   const [contactName, setContactName] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [type, setType] = useState<LeadType>('Product');
-  const [assignedTo, setAssignedTo] = useState(teamMembers[0] || 'Abid');
+  const [assignedTo, setAssignedTo] = useState(() => {
+    if (currentUser?.role === 'member') return currentUser.name;
+    return teamMembers[0] || 'Abid';
+  });
   const [angle, setAngle] = useState('');
   const [nextAction, setNextAction] = useState('Initial outreach call');
   const [nextActionDue, setNextActionDue] = useState(() => {
@@ -29,6 +42,10 @@ export function QuickAddLeadModal() {
     e.preventDefault();
     if (!businessName.trim()) return;
 
+    const finalAssignedTo = isAdmin
+      ? assignedTo || 'Abid'
+      : currentUser?.name || assignedTo || 'Abid';
+
     const newLead = addLead({
       business_name: businessName.trim(),
       contact_name: contactName.trim(),
@@ -36,7 +53,7 @@ export function QuickAddLeadModal() {
       city: city.trim(),
       type,
       stage: 'New',
-      assigned_to: assignedTo || 'Abid',
+      assigned_to: finalAssignedTo,
       angle: angle.trim(),
       next_action: nextAction.trim(),
       next_action_due: nextActionDue,
@@ -185,17 +202,23 @@ export function QuickAddLeadModal() {
               <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
                 Assigned To
               </label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full h-8.5 px-2.5 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
-              >
-                {teamMembers.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+              {isAdmin ? (
+                <select
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  className="w-full h-8.5 px-2.5 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
+                >
+                  {teamMembers.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full h-8.5 px-3 text-[12.5px] font-mono text-[#12151C]/80 bg-[#F4F6F9] border border-[#E5E7EB] rounded-md flex items-center">
+                  {currentUser?.name || assignedTo}
+                </div>
+              )}
             </div>
           </div>
 
