@@ -14,6 +14,14 @@ export const metadata: Metadata = {
   description: 'Products. Services. Real impact. Software for businesses that move forward.',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({
   children,
 }: {

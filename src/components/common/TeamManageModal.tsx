@@ -93,15 +93,15 @@ export function TeamManageModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-3 sm:p-4"
       onClick={() => setTeamModalOpen(false)}
     >
       <div
-        className="w-full max-w-lg bg-white border border-[#E5E7EB] rounded-lg shadow-2xl overflow-hidden"
+        className="w-full max-w-lg bg-white border border-[#E5E7EB] rounded-xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] bg-[#F4F6F9]">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[#E5E7EB] bg-[#F4F6F9] shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">
@@ -120,14 +120,14 @@ export function TeamManageModal() {
           </div>
           <button
             onClick={() => setTeamModalOpen(false)}
-            className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] transition-colors"
+            className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div className="p-4 sm:p-5 space-y-4 max-h-[85vh] overflow-y-auto flex-1">
           {/* Add Member Form (Admin only) - Uniform Inputs & Buttons */}
           {isAdmin && (
             <form onSubmit={handleAdd} className="space-y-3 p-3.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg">
@@ -136,7 +136,7 @@ export function TeamManageModal() {
                 <span>Add Member</span>
               </h4>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/60 mb-1">
                     Name *

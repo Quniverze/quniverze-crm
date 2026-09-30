@@ -57,12 +57,12 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#F4F6F9] text-[#12151C] font-sans antialiased">
       {/* Top Navigation Bar */}
-      <header className="h-[52px] bg-white border-b border-[#E5E7EB] px-4 md:px-6 flex items-center justify-between shrink-0 z-30 select-none">
+      <header className="h-[52px] bg-white border-b border-[#E5E7EB] px-3 sm:px-4 md:px-6 flex items-center justify-between shrink-0 z-30 select-none">
         {/* Left: Wordmark & Navigation */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
           <button
             onClick={() => setCurrentView('today')}
-            className="flex items-baseline focus:outline-none group"
+            className="flex items-baseline focus:outline-none group shrink-0"
             title="Quniverze Lead Management"
           >
             <span className="text-[16px] font-bold tracking-tight text-[#12151C]">
@@ -165,7 +165,7 @@ export function AppShell({ children }: AppShellProps) {
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden h-[54px] bg-white border-t border-[#E5E7EB] flex items-center justify-around px-2 shrink-0 z-30 select-none">
+      <nav className="md:hidden min-h-[54px] pb-[env(safe-area-inset-bottom,2px)] bg-white border-t border-[#E5E7EB] flex items-center justify-around px-1 shrink-0 z-30 select-none">
         {navItems.map((item) => {
           const isActive = currentView === item.view;
           const Icon = item.icon;

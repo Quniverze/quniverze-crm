@@ -216,9 +216,9 @@ export function TodayView() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 max-w-6xl mx-auto w-full space-y-4">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 max-w-6xl mx-auto w-full space-y-3 sm:space-y-4">
       {/* 1. Header Tile */}
-      <div className="rounded-xl bg-white border border-[#E5E7EB] p-4 md:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_1px_3px_rgba(18,21,28,0.03)]">
+      <div className="rounded-xl bg-white border border-[#E5E7EB] p-3.5 sm:p-4 md:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_1px_3px_rgba(18,21,28,0.03)]">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-[19px] font-semibold text-[#12151C] tracking-tight">

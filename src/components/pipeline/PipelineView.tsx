@@ -58,12 +58,12 @@ export function PipelineView() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F6F9] p-3 md:p-4 gap-3">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F6F9] p-2.5 sm:p-3 md:p-4 gap-2.5 md:gap-3">
       {/* 1. Top Header Tile */}
-      <div className="rounded-lg bg-white border border-[#E5E7EB] p-3.5 md:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+      <div className="rounded-lg bg-white border border-[#E5E7EB] p-3 sm:p-3.5 md:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-[18px] font-semibold text-[#12151C] tracking-tight">
+            <h1 className="text-[17px] sm:text-[18px] font-semibold text-[#12151C] tracking-tight">
               Pipeline Flow
             </h1>
             <span className="text-[#E5E7EB]">/</span>
@@ -119,8 +119,30 @@ export function PipelineView() {
         </div>
       </div>
 
+      {/* Mobile Quick Stage Selector */}
+      <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 no-scrollbar">
+        {PIPELINE_STAGES.map((stg) => {
+          const count = filteredLeads.filter((l) => l.stage === stg).length;
+          return (
+            <button
+              key={stg}
+              onClick={() => {
+                const el = document.getElementById(`stage-col-${stg}`);
+                el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+              }}
+              className="h-7 px-2.5 rounded bg-white border border-[#E5E7EB] text-[11px] font-medium text-[#12151C] shrink-0 flex items-center gap-1.5 active:bg-[#12151C] active:text-white transition-all shadow-2xs"
+            >
+              <span>{stg}</span>
+              <span className="font-mono text-[9.5px] px-1 bg-[#F4F6F9] rounded border border-[#E5E7EB]">
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* 2. 7-Stage Kanban Board */}
-      <div className="flex-1 overflow-x-auto min-h-0">
+      <div className="flex-1 overflow-x-auto min-h-0 snap-x snap-mandatory scroll-smooth">
         <div className="flex gap-3 h-full min-w-max pb-1">
           {PIPELINE_STAGES.map((stage, idx) => {
             const stageLeads = filteredLeads.filter((l) => l.stage === stage);
@@ -131,7 +153,8 @@ export function PipelineView() {
             return (
               <div
                 key={stage}
-                className="w-72 md:w-80 flex flex-col rounded-lg bg-white border border-[#E5E7EB] shrink-0 h-full overflow-hidden"
+                id={`stage-col-${stage}`}
+                className="w-[84vw] max-w-[320px] sm:w-72 md:w-80 snap-center flex flex-col rounded-lg bg-white border border-[#E5E7EB] shrink-0 h-full overflow-hidden"
               >
                 {/* Column Header */}
                 <div className="p-3 border-b border-[#E5E7EB] bg-[#F4F6F9]/60 flex items-center justify-between shrink-0">

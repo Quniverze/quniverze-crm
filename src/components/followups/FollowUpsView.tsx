@@ -218,7 +218,13 @@ export function FollowUpsView() {
                         <span className="text-[9.5px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]">
                           {lead.stage}
                         </span>
-                        <h3 className="text-[14.5px] font-semibold text-[#12151C]">
+                        <h3
+                          onClick={() => {
+                            setSelectedLeadId(lead.id);
+                            setCurrentView('leads');
+                          }}
+                          className="text-[14.5px] font-semibold text-[#12151C] hover:text-[#3B82F6] cursor-pointer transition-colors"
+                        >
                           {lead.business_name}
                         </h3>
                         <span className="text-[12px] text-[#12151C]/60">
@@ -287,7 +293,13 @@ export function FollowUpsView() {
                         <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]">
                           {lead.type}
                         </span>
-                        <h3 className="text-[14px] font-semibold text-[#12151C]">
+                        <h3
+                          onClick={() => {
+                            setSelectedLeadId(lead.id);
+                            setCurrentView('leads');
+                          }}
+                          className="text-[14px] font-semibold text-[#12151C] hover:text-[#3B82F6] cursor-pointer transition-colors"
+                        >
                           {lead.business_name}
                         </h3>
                         <span className="text-[12px] text-[#12151C]/60">
@@ -353,7 +365,13 @@ export function FollowUpsView() {
                         <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] px-1.5 py-0.5 border border-[#E5E7EB] rounded text-[#12151C]">
                           {lead.type}
                         </span>
-                        <span className="font-semibold text-[#12151C]">
+                        <span
+                          onClick={() => {
+                            setSelectedLeadId(lead.id);
+                            setCurrentView('leads');
+                          }}
+                          className="font-semibold text-[#12151C] hover:text-[#3B82F6] cursor-pointer transition-colors"
+                        >
                           {lead.business_name}
                         </span>
                         <span className="text-[11.5px] text-[#12151C]/60">
@@ -401,7 +419,13 @@ export function FollowUpsView() {
                         <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] px-1.5 py-0.5 border border-[#E5E7EB] rounded text-[#12151C]">
                           {lead.type}
                         </span>
-                        <span className="font-semibold text-[#12151C]">
+                        <span
+                          onClick={() => {
+                            setSelectedLeadId(lead.id);
+                            setCurrentView('leads');
+                          }}
+                          className="font-semibold text-[#12151C] hover:text-[#3B82F6] cursor-pointer transition-colors"
+                        >
                           {lead.business_name}
                         </span>
                         <span className="text-[11.5px] text-[#12151C]/60">

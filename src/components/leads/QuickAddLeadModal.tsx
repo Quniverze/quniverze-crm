@@ -59,15 +59,15 @@ export function QuickAddLeadModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-3 sm:p-4"
       onClick={() => setQuickAddOpen(false)}
     >
       <div
-        className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-lg shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] bg-[#F4F6F9]">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[#E5E7EB] bg-[#F4F6F9] shrink-0">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">
@@ -84,14 +84,14 @@ export function QuickAddLeadModal() {
           </div>
           <button
             onClick={() => setQuickAddOpen(false)}
-            className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] transition-colors"
+            className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
           {/* Business Line Segmented Control */}
           <div>
             <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">

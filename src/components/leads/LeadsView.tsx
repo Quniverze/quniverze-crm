@@ -20,7 +20,9 @@ import {
   Check,
   Clock,
   AlertTriangle,
-  Copy
+  Copy,
+  ChevronLeft,
+  UserCheck
 } from 'lucide-react';
 
 function getDueStatus(dueDate?: string) {
@@ -170,12 +172,36 @@ export function LeadsView() {
     showToast(`Copied ${label} to clipboard`);
   };
 
+  const assigneeOptions = useMemo(() => {
+    const set = new Set<string>();
+    teamMembers.forEach((m) => set.add(m));
+    if (activeLead?.assigned_to) set.add(activeLead.assigned_to);
+    if (currentUser?.name) set.add(currentUser.name);
+    return Array.from(set).filter(Boolean);
+  }, [teamMembers, activeLead?.assigned_to, currentUser?.name]);
+
+  const handleReassign = (newAssignee: string) => {
+    if (!activeLead || !newAssignee || activeLead.assigned_to === newAssignee) return;
+    const oldAssignee = activeLead.assigned_to || 'Unassigned';
+    updateLead(activeLead.id, { assigned_to: newAssignee });
+    addActivity(
+      activeLead.id,
+      'note',
+      `Reassigned lead from ${oldAssignee} to ${newAssignee}${currentUser ? ` by ${currentUser.name}` : ''}`
+    );
+    showToast(`Lead reassigned to ${newAssignee}`);
+  };
+
   return (
-    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-[#F4F6F9] p-3 md:p-4 gap-3">
+    <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-[#F4F6F9] p-2.5 sm:p-3 md:p-4 gap-2.5 md:gap-3">
       {/* ========================================================
           Left / Main: High-Density Table Tile
           ======================================================== */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden rounded-lg bg-white border border-[#E5E7EB]">
+      <div
+        className={`flex-1 flex-col h-full overflow-hidden rounded-lg bg-white border border-[#E5E7EB] ${
+          activeLead ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         {/* Filter & Control Bar - Uniform 32px (h-8) Controls */}
         <div className="p-3 md:p-4 border-b border-[#E5E7EB] space-y-2.5 shrink-0 bg-white">
           <div className="flex items-center justify-between gap-2.5">
@@ -379,48 +405,101 @@ export function LeadsView() {
                     </div>
 
                     {/* Mobile Card Layout */}
-                    <div className="lg:hidden space-y-2">
+                    <div className="lg:hidden space-y-2.5">
                       <div className="flex items-start justify-between gap-2">
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1 py-0.5 rounded text-[#12151C]">
-                              {lead.type}
+                            {lead.stage === 'New' ? (
+                              <span className="text-[9.5px] font-mono font-bold bg-[#3B82F6] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                New Lead
+                              </span>
+                            ) : (
+                              <span className="text-[9.5px] font-mono uppercase bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]">
+                                {lead.stage}
+                              </span>
+                            )}
+                            <span className="text-[9.5px] font-mono uppercase border border-[#E5E7EB] px-1.5 py-0.5 rounded text-[#12151C]/70">
+                              {lead.type === 'Product' ? 'Product' : 'Client'}
                             </span>
-                            <span className="text-[9.5px] font-mono uppercase border border-[#E5E7EB] px-1 py-0.5 rounded text-[#12151C]/80">
-                              {lead.stage}
-                            </span>
-                            <h4 className="text-[13.5px] font-semibold text-[#12151C]">
-                              {lead.business_name}
-                            </h4>
                           </div>
+                          <h4 className="text-[14px] font-semibold text-[#12151C] mt-1 truncate">
+                            {lead.business_name}
+                          </h4>
                           <div className="text-[12px] text-[#12151C]/70 mt-0.5">
-                            {lead.contact_name} • <span className="font-mono">{lead.phone}</span>
+                            {lead.contact_name} {lead.city && `• ${lead.city}`}
                           </div>
                         </div>
 
                         <div className="text-right shrink-0">
-                          {lead.value && (
-                            <span className="text-[12px] font-mono font-semibold text-[#12151C] block">
+                          {lead.value ? (
+                            <span className="text-[13px] font-mono font-semibold text-[#12151C] block">
                               ₹{lead.value.toLocaleString()}
                             </span>
-                          )}
-                          <span className="text-[10.5px] font-mono text-[#12151C]/50 block">
-                            {lead.assigned_to}
+                          ) : null}
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-[#12151C]/60 bg-[#F4F6F9] border border-[#E5E7EB] px-1.5 py-0.5 rounded mt-1">
+                            <UserIcon className="w-3 h-3 text-[#12151C]/40" />
+                            <span>{lead.assigned_to}</span>
                           </span>
                         </div>
                       </div>
 
-                      {lead.next_action && (
+                      {/* Next Action pill */}
+                      {lead.next_action ? (
                         <div className="text-[12px] text-[#12151C] font-medium pt-1.5 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
                           <div className="truncate flex items-center gap-1">
-                            <span className="text-[#3B82F6]">→</span>
+                            <span className="text-[#3B82F6] font-bold">→</span>
                             <span className="truncate">{lead.next_action}</span>
                           </div>
-                          <span className="text-[10px] font-mono text-[#12151C]/50 shrink-0">
-                            {lead.next_action_due}
+                          <span
+                            className={`text-[10px] font-mono uppercase font-semibold px-1.5 py-0.2 rounded shrink-0 ${
+                              dueStatus.type === 'overdue'
+                                ? 'bg-[#12151C] text-white'
+                                : dueStatus.type === 'today'
+                                ? 'bg-[#E5E7EB] text-[#12151C]'
+                                : 'text-[#12151C]/60'
+                            }`}
+                          >
+                            {dueStatus.label}
                           </span>
                         </div>
+                      ) : (
+                        <div className="text-[11px] font-mono text-[#12151C]/40 italic pt-1.5 border-t border-[#E5E7EB] flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-[#12151C]/40" />
+                          <span>No action scheduled</span>
+                        </div>
                       )}
+
+                      {/* Quick Mobile Action Bar */}
+                      <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                        <span className="text-[11.5px] font-mono text-[#12151C]/50 truncate">
+                          {lead.phone}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <a
+                            href={`tel:${lead.phone}`}
+                            className="h-7 w-7 rounded border border-[#E5E7EB] bg-white flex items-center justify-center text-[#12151C] hover:border-[#12151C] active:scale-95 transition-all"
+                            title={`Call ${lead.phone}`}
+                          >
+                            <Phone className="w-3 h-3" />
+                          </a>
+                          <a
+                            href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="h-7 w-7 rounded border border-[#E5E7EB] bg-white flex items-center justify-center text-[#12151C] hover:border-[#12151C] active:scale-95 transition-all"
+                            title="WhatsApp"
+                          >
+                            <MessageSquare className="w-3 h-3" />
+                          </a>
+                          <button
+                            onClick={() => handleSelectLead(lead)}
+                            className="h-7 px-2.5 rounded bg-[#12151C] text-white text-[11px] font-medium hover:bg-[#3B82F6] active:scale-95 transition-all flex items-center gap-1"
+                          >
+                            <span>Open</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -436,20 +515,32 @@ export function LeadsView() {
       {activeLead ? (
         <div className="w-full md:w-[420px] lg:w-[460px] rounded-lg bg-white border border-[#E5E7EB] flex flex-col h-full overflow-y-auto shrink-0 shadow-xs">
           {/* Header */}
-          <div className="h-[52px] px-4 border-b border-[#E5E7EB] flex items-center justify-between bg-[#F4F6F9]/60 shrink-0">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[9.5px] font-mono uppercase bg-[#12151C] text-white px-1.5 py-0.5 rounded">
+          <div className="h-[52px] px-3 md:px-4 border-b border-[#E5E7EB] flex items-center justify-between bg-[#F4F6F9]/60 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Mobile Back Button: Returns to Leads List */}
+              <button
+                onClick={() => setSelectedLeadId(null)}
+                className="md:hidden flex items-center gap-1 text-[12px] font-medium text-[#12151C] bg-white border border-[#E5E7EB] px-2.5 py-1.5 rounded-md hover:bg-[#F4F6F9] active:scale-95 transition-all shrink-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Leads</span>
+              </button>
+
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-[9.5px] font-mono uppercase bg-[#12151C] text-white px-1.5 py-0.5 rounded shrink-0">
                   {activeLead.type}
                 </span>
-                <span className="text-[11px] font-mono text-[#12151C]/60 truncate">
-                  Assigned: {activeLead.assigned_to}
-                </span>
+                <div className="flex items-center gap-1 text-[11px] font-mono text-[#12151C]/70 truncate bg-white border border-[#E5E7EB] px-2 py-0.5 rounded">
+                  <UserIcon className="w-3 h-3 text-[#3B82F6]" />
+                  <span className="truncate font-medium text-[#12151C]">{activeLead.assigned_to}</span>
+                </div>
               </div>
             </div>
+
             <button
               onClick={() => setSelectedLeadId(null)}
-              className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] hover:bg-[#F4F6F9] transition-colors"
+              className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] hover:bg-[#F4F6F9] transition-colors shrink-0"
+              title="Close details"
             >
               <X className="w-4 h-4" />
             </button>
@@ -559,8 +650,8 @@ export function LeadsView() {
               </div>
             </div>
 
-            {/* 3. Stage & Value - Uniform 32px (h-8) */}
-            <div className="grid grid-cols-2 gap-2.5">
+            {/* 3. Pipeline Stage & Reassign Rep - Uniform 32px (h-8) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="space-y-1">
                 <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block">
                   Pipeline Stage
@@ -568,7 +659,7 @@ export function LeadsView() {
                 <select
                   value={activeLead.stage}
                   onChange={(e) => setStage(activeLead.id, e.target.value as LeadStage)}
-                  className="w-full h-8 px-2 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none"
+                  className="w-full h-8 px-2 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
                 >
                   {PIPELINE_STAGES.map((stg) => (
                     <option key={stg} value={stg}>
@@ -578,6 +669,30 @@ export function LeadsView() {
                 </select>
               </div>
 
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block flex items-center justify-between">
+                  <span>Assigned Rep</span>
+                  <span className="text-[10px] text-[#3B82F6] font-sans font-medium">Reassign</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={activeLead.assigned_to}
+                    onChange={(e) => handleReassign(e.target.value)}
+                    className="w-full h-8 pl-7 pr-2 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
+                  >
+                    {assigneeOptions.map((member) => (
+                      <option key={member} value={member}>
+                        {member}
+                      </option>
+                    ))}
+                  </select>
+                  <UserCheck className="w-3.5 h-3.5 text-[#3B82F6] absolute left-2 top-2.5 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Est. Value & Category - Uniform 32px (h-8) */}
+            <div className="grid grid-cols-2 gap-2.5">
               <div className="space-y-1">
                 <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block">
                   Est. Value (₹)
@@ -591,8 +706,22 @@ export function LeadsView() {
                     })
                   }
                   placeholder="Est. value"
-                  className="w-full h-8 px-2.5 text-[12px] font-mono bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none"
+                  className="w-full h-8 px-2.5 text-[12px] font-mono bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 block">
+                  Category
+                </label>
+                <select
+                  value={activeLead.type}
+                  onChange={(e) => updateLead(activeLead.id, { type: e.target.value as LeadType })}
+                  className="w-full h-8 px-2 text-[12px] font-medium bg-[#F4F6F9] border border-[#E5E7EB] rounded-md text-[#12151C] focus:outline-none focus:border-[#3B82F6]"
+                >
+                  <option value="Product">Product (NivaOps)</option>
+                  <option value="Client Work">Client Work</option>
+                </select>
               </div>
             </div>
 
@@ -711,7 +840,17 @@ export function LeadsView() {
             </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="hidden md:flex w-[420px] lg:w-[460px] rounded-lg bg-white border border-[#E5E7EB] flex-col h-full items-center justify-center p-8 text-center shrink-0">
+          <div className="w-12 h-12 rounded-full bg-[#F4F6F9] border border-[#E5E7EB] flex items-center justify-center text-[#12151C]/30 mb-3">
+            <UserIcon className="w-5 h-5" />
+          </div>
+          <h3 className="text-[14px] font-semibold text-[#12151C]">No Lead Selected</h3>
+          <p className="text-[12px] text-[#12151C]/50 mt-1 max-w-xs">
+            Select a lead from the list to view contact details, schedule next actions, or reassign reps.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
