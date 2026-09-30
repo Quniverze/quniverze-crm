@@ -18,7 +18,30 @@ import {
   Calendar
 } from 'lucide-react';
 
+import { MinimalDashboard } from './MinimalDashboard';
+
 export function TodayView() {
+  const [dashboardMode, setDashboardMode] = useState<'minimal' | 'studio'>('minimal');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('quniverze_dashboard_mode');
+      if (saved === 'minimal' || saved === 'studio') {
+        setDashboardMode(saved);
+      }
+    } catch {
+      // fallback
+    }
+  }, []);
+
+  const handleSetDashboardMode = (mode: 'minimal' | 'studio') => {
+    setDashboardMode(mode);
+    try {
+      localStorage.setItem('quniverze_dashboard_mode', mode);
+    } catch {
+      // fallback
+    }
+  };
   const {
     leads,
     projects,
@@ -105,6 +128,37 @@ export function TodayView() {
     return baseNames;
   }, [usersList, leads, projects]);
 
+  const ModeSwitcher = (
+    <div className="inline-flex items-center p-1 bg-[#EEF1EB] rounded-full border border-gray-200/90 shadow-2xs">
+      <button
+        onClick={() => handleSetDashboardMode('minimal')}
+        className={`px-3.5 py-1.5 text-[12px] font-semibold rounded-full transition-all flex items-center gap-1.5 ${
+          dashboardMode === 'minimal'
+            ? 'bg-white text-[#111827] shadow-xs'
+            : 'text-gray-500 hover:text-gray-900'
+        }`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${dashboardMode === 'minimal' ? 'bg-[#1A5336]' : 'bg-transparent'}`} />
+        <span>Minimal</span>
+      </button>
+      <button
+        onClick={() => handleSetDashboardMode('studio')}
+        className={`px-3.5 py-1.5 text-[12px] font-semibold rounded-full transition-all flex items-center gap-1.5 ${
+          dashboardMode === 'studio'
+            ? 'bg-white text-[#111827] shadow-xs'
+            : 'text-gray-500 hover:text-gray-900'
+        }`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${dashboardMode === 'studio' ? 'bg-[#1A5336]' : 'bg-transparent'}`} />
+        <span>Studio</span>
+      </button>
+    </div>
+  );
+
+  if (dashboardMode === 'minimal') {
+    return <MinimalDashboard modeSwitch={ModeSwitcher} />;
+  }
+
   return (
     <div className="space-y-6 pt-2 max-w-7xl mx-auto">
       {/* ========================================================
@@ -121,7 +175,9 @@ export function TodayView() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {ModeSwitcher}
+
           <button
             onClick={() => {
               setEditingProject(null);
