@@ -59,46 +59,52 @@ export function QuickAddLeadModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-4"
       onClick={() => setQuickAddOpen(false)}
     >
       <div
-        className="w-full max-w-md bg-white border border-gray-100 rounded-[28px] shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-lg shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-[#EAECEF] bg-[#FAFAFB]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] bg-[#F4F6F9]">
           <div>
-            <h2 className="text-[17px] font-bold text-[#111827] tracking-tight">
-              Add New Lead
-            </h2>
-            <p className="text-[12px] text-gray-500 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">
+                New Intake
+              </span>
+              <span className="text-[#E5E7EB]">/</span>
+              <h2 className="text-[14.5px] font-semibold text-[#12151C] tracking-tight">
+                Add Lead
+              </h2>
+            </div>
+            <p className="text-[12px] text-[#12151C]/60 mt-0.5">
               Record a prospect for Product (NivaOps) or Client Work.
             </p>
           </div>
           <button
             onClick={() => setQuickAddOpen(false)}
-            className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
+            className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
           {/* Business Line Segmented Control */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-600 mb-1.5">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
               Line of Business *
             </label>
-            <div className="grid grid-cols-2 gap-2 bg-[#F8F9FA] p-1 rounded-full border border-gray-200">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setType('Product')}
-                className={`py-1.5 text-[12.5px] font-medium rounded-full text-center transition-all ${
+                className={`h-8 rounded-md text-[12px] font-medium border text-center transition-colors flex items-center justify-center ${
                   type === 'Product'
-                    ? 'bg-[#1A5336] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-[#12151C] text-white border-[#12151C] shadow-xs'
+                    : 'bg-[#F4F6F9] text-[#12151C] border-[#E5E7EB] hover:border-[#12151C]/40'
                 }`}
               >
                 Product (NivaOps)
@@ -106,10 +112,10 @@ export function QuickAddLeadModal() {
               <button
                 type="button"
                 onClick={() => setType('Client Work')}
-                className={`py-1.5 text-[12.5px] font-medium rounded-full text-center transition-all ${
+                className={`h-8 rounded-md text-[12px] font-medium border text-center transition-colors flex items-center justify-center ${
                   type === 'Client Work'
-                    ? 'bg-[#1A5336] text-white shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-[#12151C] text-white border-[#12151C] shadow-xs'
+                    : 'bg-[#F4F6F9] text-[#12151C] border-[#E5E7EB] hover:border-[#12151C]/40'
                 }`}
               >
                 Client Work
@@ -119,7 +125,7 @@ export function QuickAddLeadModal() {
 
           {/* Business Name */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-600 mb-1">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
               Business / Account Name *
             </label>
             <input
@@ -128,37 +134,35 @@ export function QuickAddLeadModal() {
               autoFocus
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="e.g. Royal Hostels / Urban Stays"
-              className="w-full px-3.5 py-2 text-[13px] text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+              placeholder="e.g. Royal PG / Calicut Biriyani Hub"
+              className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
             />
           </div>
 
           {/* Contact Person & Phone */}
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                Contact Person *
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
+                Contact Person
               </label>
               <input
                 type="text"
-                required
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
-                placeholder="e.g. Rahul Nair"
-                className="w-full px-3 py-2 text-[13px] text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+                placeholder="e.g. Salman K."
+                className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                Phone Number *
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
+                Phone Number
               </label>
               <input
                 type="tel"
-                required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. +91 98765 43210"
-                className="w-full px-3 py-2 text-[13px] font-mono text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+                placeholder="+91 XXXXX XXXXX"
+                className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               />
             </div>
           </div>
@@ -166,25 +170,25 @@ export function QuickAddLeadModal() {
           {/* City & Assigned To */}
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-[11px] font-medium text-gray-600 mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
                 City / Location
               </label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Bangalore"
-                className="w-full px-3 py-2 text-[13px] text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+                placeholder="e.g. Kozhikode"
+                className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                Assigned Team Member
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
+                Assigned To
               </label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full px-3 py-2 text-[13px] text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336]"
+                className="w-full h-8.5 px-2.5 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white"
               >
                 {teamMembers.map((m) => (
                   <option key={m} value={m}>
@@ -195,75 +199,75 @@ export function QuickAddLeadModal() {
             </div>
           </div>
 
-          {/* Angle (The Pitch) */}
+          {/* Angle (Pitch) */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-600 mb-1">
-              Strategic Angle / Pitch
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
+              Angle / Reason Worth Pursuing
             </label>
-            <input
-              type="text"
+            <textarea
+              rows={2}
               value={angle}
               onChange={(e) => setAngle(e.target.value)}
-              placeholder="e.g. 120-bed hostel looking to automate rent & mess billing"
-              className="w-full px-3.5 py-2 text-[13px] text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+              placeholder="e.g. 120-bed PG running manually on WhatsApp; perfect for NivaOps demo..."
+              className="w-full p-2.5 text-[12px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none focus:border-[#3B82F6] focus:bg-white resize-none"
             />
           </div>
 
-          {/* Next Action & Due Date */}
-          <div className="grid grid-cols-3 gap-2.5">
+          {/* Next Action & Date */}
+          <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2">
-              <label className="block text-[11px] font-medium text-gray-600 mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
                 Next Action
               </label>
               <input
                 type="text"
                 value={nextAction}
                 onChange={(e) => setNextAction(e.target.value)}
-                placeholder="e.g. Initial demo call"
-                className="w-full px-3 py-2 text-[13px] text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+                placeholder="e.g. Call owner"
+                className="w-full h-8.5 px-3 text-[12.5px] text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-gray-600 mb-1">
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
                 Due Date
               </label>
               <input
                 type="date"
                 value={nextActionDue}
                 onChange={(e) => setNextActionDue(e.target.value)}
-                className="w-full px-2 py-2 text-[12px] font-mono text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none"
+                className="w-full h-8.5 px-2 text-[12px] font-mono text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Deal Value */}
+          {/* Estimated Value */}
           <div>
-            <label className="block text-[11px] font-medium text-gray-600 mb-1">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50 mb-1">
               Estimated Deal Value (₹)
             </label>
             <input
               type="number"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="e.g. 50000"
-              className="w-full px-3.5 py-2 text-[13px] font-mono text-[#111827] bg-[#F8F9FA] border border-gray-200 rounded-xl focus:outline-none focus:border-[#1A5336] focus:bg-white"
+              placeholder="e.g. 25000"
+              className="w-full h-8.5 px-3 text-[12.5px] font-mono text-[#12151C] bg-[#F4F6F9] border border-[#E5E7EB] rounded-md focus:outline-none"
             />
           </div>
 
-          {/* Footer Actions */}
-          <div className="pt-3 border-t border-[#EAECEF] flex items-center justify-end gap-2.5">
+          {/* Actions */}
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-[#E5E7EB]">
             <button
               type="button"
               onClick={() => setQuickAddOpen(false)}
-              className="px-4 py-2 text-[12.5px] border border-gray-200 text-gray-600 rounded-full hover:border-gray-900"
+              className="h-8.5 px-4 text-[12px] border border-[#E5E7EB] rounded-md text-[#12151C]/70 hover:text-[#12151C] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="btn-pill-primary py-2 px-5 text-[12.5px]"
+              className="h-8.5 px-4 text-[12px] font-medium text-white bg-[#12151C] hover:bg-[#3B82F6] transition-colors rounded-md shadow-xs"
             >
-              Create Lead
+              Add Lead
             </button>
           </div>
         </form>

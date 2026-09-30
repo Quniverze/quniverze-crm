@@ -13,10 +13,7 @@ import {
   CRMView,
   UserAccount,
   UserRole,
-  PIPELINE_STAGES,
-  Project,
-  ProjectCategory,
-  ProjectStatus
+  PIPELINE_STAGES
 } from '@/types/crm';
 import { supabase, isSupabaseConfigured } from './supabase';
 
@@ -38,22 +35,6 @@ interface CRMContextType {
   setSearchOpen: (open: boolean) => void;
   teamModalOpen: boolean;
   setTeamModalOpen: (open: boolean) => void;
-
-  // Projects CRUD & Modal
-  projects: Project[];
-  addProject: (data: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => Project;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-  projectModalOpen: boolean;
-  setProjectModalOpen: (open: boolean) => void;
-  editingProject: Project | null;
-  setEditingProject: (project: Project | null) => void;
-
-  // Lead Edit Modal
-  leadModalOpen: boolean;
-  setLeadModalOpen: (open: boolean) => void;
-  editingLead: Lead | null;
-  setEditingLead: (lead: Lead | null) => void;
 
   // Sync state
   isSyncing: boolean;
@@ -104,7 +85,6 @@ const STORAGE_KEYS = {
   LEADS: 'quniverze_crm_leads',
   ACTIVITIES: 'quniverze_crm_activities',
   CLIENTS: 'quniverze_crm_clients',
-  PROJECTS: 'quniverze_crm_projects',
   USERS_LIST: 'quniverze_crm_users_list',
   VIEW: 'quniverze_crm_view'
 };
@@ -116,74 +96,6 @@ const DEFAULT_ADMIN: UserAccount = {
   password: 'password123',
   role: 'admin'
 };
-
-const DEFAULT_PROJECTS: Project[] = [
-  {
-    id: 'proj_1',
-    title: 'Develop API Endpoints',
-    client_name: 'Stripe Integration',
-    category: 'Tech',
-    status: 'Running',
-    budget_revenue: 120000,
-    due_date: '2026-11-26',
-    assigned_to: 'Abid',
-    description: 'High performance backend API endpoints for customer authentication and payment processing.',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'proj_2',
-    title: 'Onboarding Flow',
-    client_name: 'NivaOps SaaS',
-    category: 'Design',
-    status: 'Running',
-    budget_revenue: 85000,
-    due_date: '2026-11-28',
-    assigned_to: 'Edwin Adenike',
-    description: 'Complete user onboarding UX flow with role selection and campus setup wizard.',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'proj_3',
-    title: 'Build Dashboard',
-    client_name: 'Arc Company',
-    category: 'Tech',
-    status: 'Ended',
-    budget_revenue: 240000,
-    due_date: '2026-11-30',
-    assigned_to: 'Alexandra Deff',
-    description: 'Executive real-time sales and operations dashboard with custom metrics.',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'proj_4',
-    title: 'Optimize Page Load',
-    client_name: 'Hostel Matrix',
-    category: 'Tech',
-    status: 'Running',
-    budget_revenue: 65000,
-    due_date: '2026-12-05',
-    assigned_to: 'David Oshodi',
-    description: 'Core web vitals optimization, image caching, and Edge SSR delivery.',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'proj_5',
-    title: 'Cross-Browser Testing',
-    client_name: 'Client QA Suite',
-    category: 'Operations',
-    status: 'Pending',
-    budget_revenue: 45000,
-    due_date: '2026-12-06',
-    assigned_to: 'Isaac Oluwatemilorun',
-    description: 'Automated end-to-end regression testing on Chromium, WebKit, and Gecko engines.',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
 
 // Data mappers between local minimal model and Supabase PostgreSQL schema
 function mapRowToLead(row: any): Lead {
@@ -330,15 +242,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
 
-  // Projects State
-  const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
-  const [projectModalOpen, setProjectModalOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-
-  // Lead Edit Modal
-  const [leadModalOpen, setLeadModalOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
-
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
@@ -444,14 +347,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
       const storedClients = localStorage.getItem(STORAGE_KEYS.CLIENTS);
       if (storedClients) setClients(JSON.parse(storedClients));
-
-      const storedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
-      if (storedProjects) {
-        try {
-          const parsed = JSON.parse(storedProjects);
-          if (Array.isArray(parsed) && parsed.length > 0) setProjects(parsed);
-        } catch {}
-      }
 
       const storedView = localStorage.getItem(STORAGE_KEYS.VIEW) as CRMView | null;
       if (storedView) setCurrentView(storedView);
@@ -860,111 +755,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // --- Projects CRUD ---
-  const addProject = (data: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Project => {
-    const now = new Date().toISOString();
-    const newProj: Project = {
-      ...data,
-      id: 'proj_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      created_at: now,
-      updated_at: now
-    };
-
-    setProjects((prev) => {
-      const updated = [newProj, ...prev];
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updated));
-      return updated;
-    });
-
-    showToast(`Project created: ${newProj.title}`);
-
-    executeCloud(async () => {
-      try {
-        await supabase.from('clients').insert({
-          id: newProj.id,
-          business_name: newProj.title,
-          project: newProj.category,
-          value: newProj.budget_revenue || 0,
-          status: newProj.status === 'Ended' ? 'completed' : 'active',
-          notes: JSON.stringify({
-            is_project: true,
-            category: newProj.category,
-            status: newProj.status,
-            due_date: newProj.due_date,
-            assigned_to: newProj.assigned_to,
-            client_name: newProj.client_name,
-            description: newProj.description
-          }),
-          updated_at: newProj.updated_at
-        });
-      } catch {}
-    });
-
-    return newProj;
-  };
-
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    const now = new Date().toISOString();
-    let updatedProj: Project | undefined;
-
-    setProjects((prev) => {
-      const updated = prev.map((p) => {
-        if (p.id === id) {
-          updatedProj = { ...p, ...updates, updated_at: now };
-          return updatedProj;
-        }
-        return p;
-      });
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updated));
-      return updated;
-    });
-
-    showToast('Project updated');
-
-    if (updatedProj) {
-      const target = updatedProj;
-      executeCloud(async () => {
-        try {
-          await supabase
-            .from('clients')
-            .update({
-              business_name: target.title,
-              project: target.category,
-              value: target.budget_revenue || 0,
-              status: target.status === 'Ended' ? 'completed' : 'active',
-              notes: JSON.stringify({
-                is_project: true,
-                category: target.category,
-                status: target.status,
-                due_date: target.due_date,
-                assigned_to: target.assigned_to,
-                client_name: target.client_name,
-                description: target.description
-              }),
-              updated_at: target.updated_at
-            })
-            .eq('id', id);
-        } catch {}
-      });
-    }
-  };
-
-  const deleteProject = (id: string) => {
-    setProjects((prev) => {
-      const updated = prev.filter((p) => p.id !== id);
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updated));
-      return updated;
-    });
-    if (editingProject?.id === id) setEditingProject(null);
-    showToast('Project deleted');
-
-    executeCloud(async () => {
-      try {
-        await supabase.from('clients').delete().eq('id', id);
-      } catch {}
-    });
-  };
-
   return (
     <CRMContext.Provider
       value={{
@@ -984,18 +774,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         setTeamModalOpen,
         isSyncing,
         refreshFromCloud,
-        projects,
-        addProject,
-        updateProject,
-        deleteProject,
-        projectModalOpen,
-        setProjectModalOpen,
-        editingProject,
-        setEditingProject,
-        leadModalOpen,
-        setLeadModalOpen,
-        editingLead,
-        setEditingLead,
         leads,
         addLead,
         updateLead,

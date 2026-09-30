@@ -77,45 +77,51 @@ export function TeamManageModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#12151C]/50 p-4"
       onClick={() => setTeamModalOpen(false)}
     >
       <div
-        className="w-full max-w-lg bg-white border border-gray-100 rounded-[28px] shadow-2xl overflow-hidden"
+        className="w-full max-w-lg bg-white border border-[#E5E7EB] rounded-lg shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-[#EAECEF] bg-[#FAFAFB]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB] bg-[#F4F6F9]">
           <div>
-            <h3 className="text-[17px] font-bold text-[#111827] tracking-tight">
-              Team &amp; Access
-            </h3>
-            <p className="text-[12px] text-gray-500 mt-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#3B82F6]">
+                Settings
+              </span>
+              <span className="text-[#E5E7EB]">/</span>
+              <h3 className="text-[14.5px] font-semibold text-[#12151C] tracking-tight">
+                Team
+              </h3>
+            </div>
+            <p className="text-[12px] text-[#12151C]/60 mt-0.5">
               Manage team members, update usernames and passwords, and assign roles.
             </p>
           </div>
           <button
             onClick={() => setTeamModalOpen(false)}
-            className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
+            className="h-8 w-8 rounded-md flex items-center justify-center text-[#12151C]/50 hover:text-[#12151C] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
-          {/* Add form (Only for Admin) */}
+        <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+          {/* Add Member Form (Admin only) - Uniform Inputs & Buttons */}
           {isAdmin ? (
-            <form onSubmit={handleAdd} className="space-y-3 p-4 bg-[#F8FAF9] border border-[#1A5336]/20 rounded-2xl">
-              <h4 className="text-[12.5px] font-bold text-[#1A5336] flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4 text-[#1A5336]" />
-                <span>Add Team Member</span>
+            <form onSubmit={handleAdd} className="space-y-3 p-3.5 bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg">
+              <h4 className="text-[11.5px] font-mono uppercase tracking-wider font-semibold text-[#12151C] flex items-center gap-1.5">
+                <UserPlus className="w-3.5 h-3.5 text-[#3B82F6]" />
+                <span>Add Member</span>
               </h4>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
-                    Full Name *
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/60 mb-1">
+                    Name *
                   </label>
                   <input
                     type="text"
@@ -128,12 +134,12 @@ export function TeamManageModal() {
                       }
                     }}
                     placeholder="e.g. Adil"
-                    className="w-full px-3 py-1.5 text-[12.5px] bg-white border border-gray-200 rounded-xl focus:outline-none"
+                    className="w-full h-8.5 px-2.5 text-[12.5px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/60 mb-1">
                     Username *
                   </label>
                   <input
@@ -142,14 +148,14 @@ export function TeamManageModal() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="e.g. adil"
-                    className="w-full px-3 py-1.5 text-[12.5px] font-mono bg-white border border-gray-200 rounded-xl focus:outline-none"
+                    className="w-full h-8.5 px-2.5 text-[12.5px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/60 mb-1">
                     Password *
                   </label>
                   <input
@@ -158,18 +164,18 @@ export function TeamManageModal() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="e.g. adil2026"
-                    className="w-full px-3 py-1.5 text-[12.5px] font-mono bg-white border border-gray-200 rounded-xl focus:outline-none"
+                    className="w-full h-8.5 px-2.5 text-[12.5px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 mb-1">
+                  <label className="block text-[10.5px] font-mono uppercase text-[#12151C]/60 mb-1">
                     Role
                   </label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-1.5 text-[12.5px] bg-white border border-gray-200 rounded-xl focus:outline-none"
+                    className="w-full h-8.5 px-2.5 text-[12.5px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                   >
                     <option value="member">Member</option>
                     <option value="admin">Admin</option>
@@ -181,7 +187,7 @@ export function TeamManageModal() {
                 <button
                   type="submit"
                   disabled={!name.trim() || !username.trim() || !password.trim()}
-                  className="px-4 py-2 bg-[#1A5336] text-white text-[12px] font-medium rounded-full hover:bg-[#14422B] disabled:opacity-40 transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="h-8.5 px-4 bg-[#12151C] text-white text-[12px] font-medium hover:bg-[#3B82F6] disabled:opacity-40 transition-colors flex items-center gap-1.5 rounded-md shadow-xs"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Create Account</span>
@@ -189,18 +195,18 @@ export function TeamManageModal() {
               </div>
             </form>
           ) : (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-[12px] text-gray-600">
+            <div className="p-3 bg-[#F4F6F9] border border-[#E5E7EB] rounded-lg text-[12px] text-[#12151C]/70">
               Only admins can create or delete team members.
             </div>
           )}
 
           {/* Members List with Credentials and Edit capability */}
           <div className="space-y-2">
-            <h4 className="text-[12px] font-bold text-gray-500 uppercase tracking-wider">
-              Active Team Accounts ({usersList.length})
+            <h4 className="text-[11px] font-mono uppercase tracking-wider text-[#12151C]/50">
+              Team Members ({usersList.length})
             </h4>
 
-            <div className="divide-y divide-gray-100 border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="divide-y divide-[#E5E7EB] border border-[#E5E7EB] rounded-lg overflow-hidden">
               {usersList.map((user) => {
                 const isAbid = user.name.toLowerCase() === 'abid';
                 const isEditing = editingUserId === user.id;
@@ -210,16 +216,16 @@ export function TeamManageModal() {
                     <form
                       key={user.id}
                       onSubmit={handleSaveEdit}
-                      className="p-3.5 bg-[#F8FAF9] space-y-3"
+                      className="p-3 bg-[#F4F6F9] space-y-2.5"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-bold text-[#1A5336]">
+                        <span className="text-[11px] font-mono uppercase font-bold text-[#12151C]">
                           Edit Credentials: {user.name}
                         </span>
                         <button
                           type="button"
                           onClick={() => setEditingUserId(null)}
-                          className="text-[11px] text-gray-500 hover:text-gray-900"
+                          className="text-[11px] text-[#12151C]/60 hover:text-[#12151C]"
                         >
                           Cancel
                         </button>
@@ -227,7 +233,7 @@ export function TeamManageModal() {
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10.5px] font-medium text-gray-500 mb-0.5">
+                          <label className="block text-[10px] font-mono uppercase text-[#12151C]/50 mb-0.5">
                             Name
                           </label>
                           <input
@@ -235,12 +241,12 @@ export function TeamManageModal() {
                             required
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            className="w-full px-2.5 py-1 text-[12px] bg-white border border-gray-200 rounded-lg focus:outline-none"
+                            className="w-full h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[10.5px] font-medium text-gray-500 mb-0.5">
+                          <label className="block text-[10px] font-mono uppercase text-[#12151C]/50 mb-0.5">
                             Username
                           </label>
                           <input
@@ -248,14 +254,14 @@ export function TeamManageModal() {
                             required
                             value={editUsername}
                             onChange={(e) => setEditUsername(e.target.value)}
-                            className="w-full px-2.5 py-1 text-[12px] font-mono bg-white border border-gray-200 rounded-lg focus:outline-none"
+                            className="w-full h-8 px-2 text-[12px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10.5px] font-medium text-gray-500 mb-0.5">
+                          <label className="block text-[10px] font-mono uppercase text-[#12151C]/50 mb-0.5">
                             Password
                           </label>
                           <input
@@ -263,18 +269,18 @@ export function TeamManageModal() {
                             required
                             value={editPassword}
                             onChange={(e) => setEditPassword(e.target.value)}
-                            className="w-full px-2.5 py-1 text-[12px] font-mono bg-white border border-gray-200 rounded-lg focus:outline-none"
+                            className="w-full h-8 px-2 text-[12px] font-mono bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[10.5px] font-medium text-gray-500 mb-0.5">
+                          <label className="block text-[10px] font-mono uppercase text-[#12151C]/50 mb-0.5">
                             Role
                           </label>
                           <select
                             value={editRole}
                             onChange={(e) => setEditRole(e.target.value as UserRole)}
-                            className="w-full px-2.5 py-1 text-[12px] bg-white border border-gray-200 rounded-lg focus:outline-none"
+                            className="w-full h-8 px-2 text-[12px] bg-white border border-[#E5E7EB] rounded-md focus:outline-none"
                           >
                             <option value="member">Member</option>
                             <option value="admin">Admin</option>
@@ -286,13 +292,13 @@ export function TeamManageModal() {
                         <button
                           type="button"
                           onClick={() => setEditingUserId(null)}
-                          className="px-3 py-1 text-[11.5px] border border-gray-300 rounded-full hover:border-gray-900"
+                          className="h-8 px-3 text-[11.5px] border border-[#E5E7EB] rounded-md hover:border-[#12151C]"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-4 py-1 bg-[#1A5336] text-white text-[11.5px] font-medium rounded-full hover:bg-[#14422B]"
+                          className="h-8 px-3.5 bg-[#12151C] text-white text-[11.5px] font-medium rounded-md hover:bg-[#3B82F6]"
                         >
                           Save Credentials
                         </button>
@@ -304,16 +310,16 @@ export function TeamManageModal() {
                 return (
                   <div
                     key={user.id}
-                    className="p-3.5 bg-white flex items-center justify-between text-[13px] hover:bg-[#F8FAF9] transition-colors"
+                    className="p-3 bg-white flex items-center justify-between text-[12.5px] hover:bg-[#F4F6F9] transition-colors"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#111827]">{user.name}</span>
+                        <span className="font-semibold text-[#12151C]">{user.name}</span>
                         <span
-                          className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-full ${
+                          className={`text-[9.5px] font-mono uppercase px-1 rounded border ${
                             user.role === 'admin'
-                              ? 'bg-[#E8F5EE] text-[#1A5336] font-bold'
-                              : 'bg-gray-100 text-gray-700'
+                              ? 'bg-[#12151C] text-white border-[#12151C]'
+                              : 'bg-[#F4F6F9] text-[#12151C] border-[#E5E7EB]'
                           }`}
                         >
                           {user.role}
@@ -321,36 +327,36 @@ export function TeamManageModal() {
                       </div>
 
                       {/* Username & Password Display */}
-                      <div className="flex items-center gap-2 text-[11.5px] font-mono text-gray-500 mt-1">
-                        <span>User: <strong className="text-[#111827]">{user.username}</strong></span>
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-[#12151C]/60 mt-0.5">
+                        <span>User: <strong className="text-[#12151C]">{user.username}</strong></span>
                         <span>•</span>
-                        <span>Pass: <strong className="text-[#111827]">{user.password || '••••••'}</strong></span>
+                        <span>Pass: <strong className="text-[#12151C]">{user.password || '••••••'}</strong></span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Edit Button */}
+                      {/* Edit Button - Uniform 30px (h-7.5) */}
                       {isAdmin && (
                         <button
                           onClick={() => handleStartEdit(user)}
-                          className="px-3 py-1 text-[11.5px] border border-gray-200 rounded-full text-gray-700 hover:border-gray-900 flex items-center gap-1 transition-colors"
+                          className="h-7.5 px-2.5 text-[11px] font-mono border border-[#E5E7EB] text-[#12151C] hover:border-[#12151C] rounded-md flex items-center gap-1 transition-colors"
                           title="Update username, password, or role"
                         >
-                          <Edit2 className="w-3 h-3 text-[#1A5336]" />
+                          <Edit2 className="w-3 h-3 text-[#3B82F6]" />
                           <span>Edit</span>
                         </button>
                       )}
 
-                      {/* Copy Credentials Button */}
+                      {/* Copy Credentials Button - Uniform 30px (h-7.5) */}
                       {user.password && (
                         <button
                           onClick={() => handleCopyCredentials(user.username, user.password || '', user.id)}
-                          className="px-3 py-1 text-[11.5px] border border-gray-200 rounded-full text-gray-700 hover:border-gray-900 flex items-center gap-1 transition-colors"
-                          title="Copy login details"
+                          className="h-7.5 px-2.5 text-[11px] font-mono border border-[#E5E7EB] text-[#12151C] hover:border-[#12151C] rounded-md flex items-center gap-1 transition-colors"
+                          title="Copy login details to send to member"
                         >
                           {copiedId === user.id ? (
                             <>
-                              <Check className="w-3 h-3 text-[#1A5336]" />
+                              <Check className="w-3 h-3 text-[#3B82F6]" />
                               <span>Copied</span>
                             </>
                           ) : (
@@ -362,7 +368,7 @@ export function TeamManageModal() {
                         </button>
                       )}
 
-                      {/* Delete Member */}
+                      {/* Delete Member (Admin only, not Abid) */}
                       {isAdmin && !isAbid && (
                         <button
                           onClick={() => {
@@ -370,10 +376,10 @@ export function TeamManageModal() {
                               removeTeamMember(user.id);
                             }
                           }}
-                          className="p-1.5 text-gray-400 hover:text-rose-600 rounded-full hover:bg-rose-50 transition-colors"
+                          className="h-7.5 w-7.5 rounded-md border border-[#E5E7EB] hover:border-[#12151C] flex items-center justify-center text-[#12151C]/40 hover:text-[#12151C] transition-colors"
                           title="Remove user"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -386,7 +392,7 @@ export function TeamManageModal() {
           <div className="pt-2 flex justify-end">
             <button
               onClick={() => setTeamModalOpen(false)}
-              className="btn-pill-primary py-2 px-5"
+              className="h-8.5 px-4 text-[12px] bg-[#12151C] text-white font-medium hover:bg-[#3B82F6] transition-colors rounded-md shadow-xs"
             >
               Done
             </button>

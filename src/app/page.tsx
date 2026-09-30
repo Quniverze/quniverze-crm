@@ -11,8 +11,6 @@ import { PipelineView } from '@/components/pipeline/PipelineView';
 import { ClientsView } from '@/components/clients/ClientsView';
 import { GlobalSearchModal } from '@/components/common/GlobalSearchModal';
 import { QuickAddLeadModal } from '@/components/leads/QuickAddLeadModal';
-import { EditLeadModal } from '@/components/leads/EditLeadModal';
-import { ProjectModal } from '@/components/projects/ProjectModal';
 import { TeamManageModal } from '@/components/common/TeamManageModal';
 
 export default function CRMApp() {
@@ -34,8 +32,6 @@ export default function CRMApp() {
       {/* Global Modals */}
       <GlobalSearchModal />
       <QuickAddLeadModal />
-      <EditLeadModal />
-      <ProjectModal />
       <TeamManageModal />
     </AppShell>
   );
